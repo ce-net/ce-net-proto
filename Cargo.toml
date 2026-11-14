@@ -1,0 +1,25 @@
+[package]
+name = "ce-net-proto"
+version = "0.1.0"
+edition = "2024"
+description = "The open ce-net capability token: Ed25519-signed, attenuating capability chains anyone can verify offline. Wire-compatible with ce-cap."
+# Placeholder: same license as ce. Relicensing to Apache-2.0/MIT is Leif's decision (see README).
+license = "AGPL-3.0-only"
+readme = "README.md"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+bincode = "1"
+ed25519-dalek = { version = "2", default-features = false, features = ["std", "fast", "zeroize"] }
+sha2 = "0.10"
+hex = "0.4"
+
+[dev-dependencies]
+# Cross-implementation tests only: prove byte-for-byte compatibility with the in-tree ce-cap.
+ce-cap = { path = "../ce/crates/ce-cap" }
+ce-identity = { path = "../ce/crates/ce-identity" }
+serde_json = "1"
+
+[[bin]]
+name = "ce-cap-verify"
+path = "src/bin/ce-cap-verify.rs"
