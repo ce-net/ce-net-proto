@@ -3,14 +3,21 @@
 //! This module holds the types ([`types`]), the signed bytes ([`cap_bytes`], [`cap_id`]), the wire
 //! form ([`TokenV3`]: magic `CEC3`, links, program bodies) and the canonical-form rules of section
 //! 3.4 ([`canon`]). Decoding is strict, unlike v1: trailing bytes, unknown variants, invalid bools
-//! and non-canonical values are refused. Chain verification is not here yet.
+//! and non-canonical values are refused. [`mint`] signs root and attenuated links ([`sign`], Ed25519
+//! and P-256) and refuses any child wider than its parent ([`narrow`]). Chain verification is not
+//! here yet.
 //!
 //! Nothing here touches v1: a byte string without the magic is not a v3 token ([`is_v3`]) and is
 //! verified by the v1 code alone.
 
 pub mod canon;
+pub mod mint;
+pub mod narrow;
+pub mod sign;
 pub mod types;
 
+#[cfg(test)]
+mod mint_tests;
 #[cfg(test)]
 mod tests;
 

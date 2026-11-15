@@ -13,6 +13,8 @@ bincode = "1"
 ed25519-dalek = { version = "2", default-features = false, features = ["std", "fast", "zeroize"] }
 sha2 = "0.10"
 hex = "0.4"
+# v3 P-256 keys (CAPABILITY-PROGRAMS.md section 2): ECDSA/SHA-256 sign and verify only.
+p256 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
 
 [dev-dependencies]
 # Cross-implementation tests only: prove byte-for-byte compatibility with the in-tree ce-cap.
