@@ -1,0 +1,15 @@
+[package]
+name = "ce-cal-ffi"
+version = "0.1.0"
+edition = "2024"
+description = "CAL (cell auth language) behind a C ABI, for Python (ctypes) and any language with a C FFI."
+license = "AGPL-3.0-only"
+publish = false
+
+[lib]
+name = "ce_cal_ffi"
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[dependencies]
+ce-net-proto = { path = "../.." }

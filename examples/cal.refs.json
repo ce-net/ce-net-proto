@@ -1,0 +1,38 @@
+{
+  "about": "The ref book of the examples: what each ce-ref names, pinned. The keys are the fixed test keys of docs/CAPABILITY-PROGRAMS.md section 12.5 (each secret is 32 copies of one byte), so the examples compile to the same links as the conformance vectors. The repositories are examples, not real ones.",
+  "principals": {
+    "person:leif": ["p256:020217e617f0b6443928278f96999e69a23a4f2c152bdf6d6cdf66e5b80282d4ed"],
+    "agent:planner": ["ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b"],
+    "agent:agent-b": ["ed25519:a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0"],
+    "agent:installer": ["ed25519:74f85cda34d1c27c4621484731e91579c3d9c6cfc0d94b281aa11e9162058aa9"],
+    "agent:writer": ["ed25519:58936604abda112bc94933569c82f8d0cc0ddf92a3f8329f2f448f7f484a594c"],
+    "person:friend": ["ed25519:48075a597e721a156e2e0799de5cc0c5324dc6e7eaf1cdd46250868ec53215dd"],
+    "agent:friend-agent": ["ed25519:5e212c0980e4b39fc09721134aa02109374edfd260c0d3d03cb501c8d65457a9"],
+    "agent:job-sandbox": ["ed25519:17cb79fb2b4120f2b1ec65e4198d6e08b28e813feb01e4a400839b85e18080ce"],
+    "agent:auth-guard": ["ed25519:c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a"],
+    "agent:printer-guard": ["ed25519:2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7"]
+  },
+  "nodes": {
+    "pi-01": ["db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d"],
+    "box-1": ["2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12"],
+    "leif-desk": ["22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6"],
+    "macbook": ["d759793bbc13a2819a827c76adb6fba8a49aee007f49f2d0992d99b825ad2c48"],
+    "printer-1": ["6355691c178a8ff91007a7478afb955ef7352c63e7b25703984cf78b26e21a56"]
+  },
+  "repos": {
+    "huey-scripts": ["https://github.com/example/huey-scripts"],
+    "friend-jobs": ["https://github.com/example/friend-jobs"]
+  },
+  "files": {
+    "ce-ref://repo/b47ae72900538d9d902251c935592073814514e0a5db7f31b4731a2fc046f331/run.py": [
+      { "sha256": "3f9b0d4d3e88a9987a8670f2ab9ff7b912448d8ade2bd369395d06e48c6feb51", "size": 26, "commit": "3f2a1c7e9d4b5a6c8e0f1a2b3c4d5e6f7a8b9c0d" }
+    ],
+    "ce-ref://repo/1e9cca34a937f699f47233535168e0f02feea6c8a3ab844f63e16572388a7ff5/job.py": [
+      { "sha256": "5a0401886e5b2bd48eb8f688abec6513f98192b41212ccb892217408899e05e5", "size": 73, "commit": "8c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d" }
+    ]
+  },
+  "cells": {
+    "wechat.read@1": ["ed25519:f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0"]
+  },
+  "roots": ["person:leif"]
+}

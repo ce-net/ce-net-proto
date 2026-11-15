@@ -1,0 +1,18 @@
+# "always talk to this agent if you want to access the 3d printer" (docs/CAPABILITY-PROGRAMS.md 12.4).
+# Every print job must come through the printer's guard agent, which signs its approval of
+# that exact job; a holder of the whole chain who goes to the printer directly is refused.
+cal 1
+
+person:leif grants agent:planner {
+  may grant printer3d:print to anyone depth 1
+  on node:printer-1
+  until 2027-01-22T08:00Z
+  via agent:printer-guard
+  nonce 40
+}
+
+agent:planner grants agent:agent-b {
+  can printer3d:print
+  until 2027-01-16T08:00Z
+  nonce 41
+}

@@ -1,0 +1,51 @@
+# The long chain (docs/CAPABILITY-PROGRAMS.md 12.2): Leif -> a friend -> the friend's agent ->
+# a sandboxed Python process -> the internet, on box-1, for one day. Each link narrows the one
+# above it: 5 runs become 2, any *.example.org becomes api.example.org, 500 MB becomes 100 MB.
+cal 1
+
+program job {
+  install repo:friend-jobs/job.py@8c1d2e3 sha256:5a0401886e5b2bd48eb8f688abec6513f98192b41212ccb892217408899e05e5 to /srv/jobs/f/job.py on node:box-1 mode 755
+  spawn repo:friend-jobs/job.py@8c1d2e3 sha256:5a0401886e5b2bd48eb8f688abec6513f98192b41212ccb892217408899e05e5 on node:box-1 once {
+    cwd /srv/jobs/f
+    write /srv/jobs/f/out
+    egress api.example.org:443
+    out 10MB
+    in 100MB
+  }
+}
+
+person:leif grants person:friend {
+  may grant cell.install:install-file, net.egress:connect, proc.spawn:run to anyone depth 2
+  on node:box-1
+  until 2027-01-16T08:00Z
+  files under /srv/jobs/f
+  cpu 2
+  memory 1024MB
+  uses 5 per link
+  limit net.egress.bytes_in 500MB
+  limit net.egress.bytes_out 50MB
+  limit proc.spawn.wall_s 1h
+  egress *.example.org:443
+  nonce 10
+}
+
+person:friend grants agent:friend-agent {
+  can cell.install:install-file, proc.spawn:run
+  may grant net.egress:connect to anyone depth 1
+  until 2027-01-15T20:00Z
+  cpu 1
+  memory 512MB
+  uses 2 per link
+  limit net.egress.bytes_in 100MB
+  limit net.egress.bytes_out 10MB
+  limit proc.spawn.wall_s 10m
+  egress api.example.org:443
+  nonce 11
+}
+
+# The process's own key: it may open connections, only for this one program.
+agent:friend-agent grants agent:job-sandbox {
+  can net.egress:connect
+  only job
+  nonce 12
+}

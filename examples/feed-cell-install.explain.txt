@@ -1,0 +1,34 @@
+A chain of 2 links, carrying 1 program. Each link is signed by its issuer and can only narrow the link above it; every use must satisfy every link.
+
+Link 0: person:leif grants agent:planner
+  link id   8ca7ea3adc1ff2bd467ad07a8ad9f5f6109cd12b7a9678e446451b7008473271
+  issuer    person:leif = p256:020217e617f0b6443928278f96999e69a23a4f2c152bdf6d6cdf66e5b80282d4ed
+  audience  agent:planner = ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b
+  This is the root: a node accepts the chain only if it trusts the issuer's key as a root.
+  Own use: agent:planner may not use this link itself; it can only grant.
+  Delegation: agent:planner may grant 'cell.install:install', 'cell.install:manage', 'cell.install:install:feed.att@leif-desk', 'cell.install:install:feed.att@macbook', 'cell.install:install:feed.view@leif-desk', 'cell.install:install:feed.view@macbook', 'cell.install:install:talk.messages@leif-desk', 'cell.install:install:talk.messages@macbook', 'cell.install:manage:feed.att@leif-desk', 'cell.install:manage:feed.att@macbook', 'cell.install:manage:feed.view@leif-desk', 'cell.install:manage:feed.view@macbook', 'cell.install:manage:talk.messages@leif-desk', 'cell.install:manage:talk.messages@macbook' to anyone, one link deep: the link it grants may grant nothing further.
+  Where: only on these 2 nodes: node:leif-desk = 22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6; node:macbook = d759793bbc13a2819a827c76adb6fba8a49aee007f49f2d0992d99b825ad2c48.
+  When: until 2027-01-22 08:00:00 UTC (unix 1800604800).
+  Counted: at most 1 use of each action at each node (each specific right is counted on its own).
+  Conditions: none on this link.
+
+Link 1: agent:planner grants agent:installer
+  link id   97a0e39058acc02087f16d83b6991e67165ff73caf0c3ec3a547563680b03629
+  issuer    agent:planner = ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b
+  audience  agent:installer = ed25519:74f85cda34d1c27c4621484731e91579c3d9c6cfc0d94b281aa11e9162058aa9
+  Own use: agent:installer may 'cell.install:install', 'cell.install:install:feed.view@leif-desk'.
+  Delegation: nothing may be granted below this link (it is final).
+  Where: only on node:leif-desk = 22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6.
+  When: until 2027-01-15 09:00:00 UTC (unix 1800003600).
+  Counted: at most 1 use of each action at each node (each specific right is counted on its own).
+  Programs: may be used only to execute feed_view_desk (program id aef02bf3c0fe97fa19d08452f0e3efd188669ef541aceb7f454cfed540c6bcb9).
+  Conditions: none on this link.
+
+Program feed_view_desk (program id aef02bf3c0fe97fa19d08452f0e3efd188669ef541aceb7f454cfed540c6bcb9), 1 step:
+  step 0: install cell feed.view, build sha256:2174759bed9a91c0830adb8d1142f0bde79a25b0d2fa376e3f7ee7be82db6f0f (checked against its signed build statement), on node:leif-desk = 22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6.
+  Typed under the leaf: every step is within what agent:installer may do.
+
+In short: the chain is held by agent:installer = ed25519:74f85cda34d1c27c4621484731e91579c3d9c6cfc0d94b281aa11e9162058aa9.
+  It may 'cell.install:install', 'cell.install:install:feed.view@leif-desk', only on node:leif-desk = 22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6, until 2027-01-15 09:00:00 UTC, only to execute feed_view_desk.
+  It may grant nothing further.
+  No condition beyond the chain itself: no proof is needed at use.

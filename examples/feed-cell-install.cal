@@ -1,0 +1,32 @@
+# Installing the feed cells (docs/CAPABILITY-PROGRAMS.md 12.3): Leif lets the planner grant
+# cell.install install and manage on leif-desk and the MacBook for the cells feed.att,
+# feed.view and talk.messages, once each. The planner then grants one install, of one exact
+# build, to the installer agent.
+cal 1
+
+program feed_view_desk {
+  install cell:feed.view@1 build sha256:2174759bed9a91c0830adb8d1142f0bde79a25b0d2fa376e3f7ee7be82db6f0f on node:leif-desk
+}
+
+person:leif grants agent:planner {
+  may grant cell.install:install, cell.install:manage,
+    cell.install:install:feed.att@leif-desk, cell.install:install:feed.att@macbook,
+    cell.install:install:feed.view@leif-desk, cell.install:install:feed.view@macbook,
+    cell.install:install:talk.messages@leif-desk, cell.install:install:talk.messages@macbook,
+    cell.install:manage:feed.att@leif-desk, cell.install:manage:feed.att@macbook,
+    cell.install:manage:feed.view@leif-desk, cell.install:manage:feed.view@macbook,
+    cell.install:manage:talk.messages@leif-desk, cell.install:manage:talk.messages@macbook
+    to anyone depth 1
+  on node:leif-desk, node:macbook
+  until 2027-01-22T08:00Z
+  uses 1 per action
+  nonce 20
+}
+
+agent:planner grants agent:installer {
+  can cell.install:install, cell.install:install:feed.view@leif-desk
+  on node:leif-desk
+  until 2027-01-15T09:00Z
+  only feed_view_desk
+  nonce 102
+}

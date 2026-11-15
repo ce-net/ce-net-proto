@@ -1,0 +1,31 @@
+A chain of 2 links. Each link is signed by its issuer and can only narrow the link above it; every use must satisfy every link.
+
+Link 0: person:leif grants agent:planner
+  link id   80e223e6f1e6aeb5b163f7e9a77e6fae381d9ac09eb1eb3a30c245d1b731d090
+  issuer    person:leif = p256:020217e617f0b6443928278f96999e69a23a4f2c152bdf6d6cdf66e5b80282d4ed
+  audience  agent:planner = ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b
+  This is the root: a node accepts the chain only if it trusts the issuer's key as a root.
+  Own use: agent:planner may not use this link itself; it can only grant.
+  Delegation: agent:planner may grant 'door.gate:pass' to anyone, one link deep: the link it grants may grant nothing further.
+  Where: only on node:box-1 = 2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12.
+  When: until 2027-01-22 08:00:00 UTC (unix 1800604800).
+  Condition (cosign): every use must be co-signed by agent:auth-guard = ed25519:c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a, over that exact request.
+  Condition (via): every use must come through agent:auth-guard = ed25519:c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a, which signs its approval of that exact request.
+
+Link 1: agent:planner grants agent:agent-b
+  link id   bf911a12443f4b96d7571cfac70ab947326098499fa886fb46f5bff7b0ac8310
+  issuer    agent:planner = ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b
+  audience  agent:agent-b = ed25519:a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0
+  Own use: agent:agent-b may 'door.gate:pass'.
+  Delegation: nothing may be granted below this link (it is final).
+  Where: only on node:box-1 = 2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12.
+  When: until 2027-01-16 08:00:00 UTC (unix 1800086400).
+  Condition (cosign): every use must be co-signed by agent:auth-guard = ed25519:c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a, over that exact request.
+  Condition (via): every use must come through agent:auth-guard = ed25519:c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a, which signs its approval of that exact request.
+
+In short: the chain is held by agent:agent-b = ed25519:a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0.
+  It may 'door.gate:pass', only on node:box-1 = 2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12, until 2027-01-16 08:00:00 UTC.
+  It may grant nothing further.
+  Every use must also meet these conditions:
+    every use must be co-signed by agent:auth-guard = ed25519:c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a, over that exact request.
+    every use must come through agent:auth-guard = ed25519:c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a, which signs its approval of that exact request.

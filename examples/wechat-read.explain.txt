@@ -1,0 +1,28 @@
+A chain of 2 links. Each link is signed by its issuer and can only narrow the link above it; every use must satisfy every link.
+
+Link 0: person:leif grants agent:planner
+  link id   a378d9b4ed1c913625d020e43beaa9a6b1fc3155f22f5baa6c1a31c35d9d1c14
+  issuer    person:leif = p256:020217e617f0b6443928278f96999e69a23a4f2c152bdf6d6cdf66e5b80282d4ed
+  audience  agent:planner = ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b
+  This is the root: a node accepts the chain only if it trusts the issuer's key as a root.
+  Own use: agent:planner may not use this link itself; it can only grant.
+  Delegation: agent:planner may grant 'wechat.send:send' to anyone, one link deep: the link it grants may grant nothing further.
+  Where: only on node:leif-desk = 22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6.
+  When: until 2027-01-22 08:00:00 UTC (unix 1800604800).
+  Condition (require): before every use, cell:wechat.read@1 (whichever key the executing node trusts for it) must attest that the requester has read wechat thread family through its newest message at the time, attested at most 10 minutes before the use.
+
+Link 1: agent:planner grants agent:writer
+  link id   d17ef113b9c6578f11053c9f2ac698e3659030ea25b648133ba9e2eac9353ee6
+  issuer    agent:planner = ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b
+  audience  agent:writer = ed25519:58936604abda112bc94933569c82f8d0cc0ddf92a3f8329f2f448f7f484a594c
+  Own use: agent:writer may 'wechat.send:send'.
+  Delegation: nothing may be granted below this link (it is final).
+  Where: only on node:leif-desk = 22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6.
+  When: until 2027-01-16 08:00:00 UTC (unix 1800086400).
+  Condition (require): before every use, cell:wechat.read@1 (whichever key the executing node trusts for it) must attest that the requester has read wechat thread family through its newest message at the time, attested at most 10 minutes before the use.
+
+In short: the chain is held by agent:writer = ed25519:58936604abda112bc94933569c82f8d0cc0ddf92a3f8329f2f448f7f484a594c.
+  It may 'wechat.send:send', only on node:leif-desk = 22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6, until 2027-01-16 08:00:00 UTC.
+  It may grant nothing further.
+  Every use must also meet these conditions:
+    before every use, cell:wechat.read@1 (whichever key the executing node trusts for it) must attest that the requester has read wechat thread family through its newest message at the time, attested at most 10 minutes before the use.

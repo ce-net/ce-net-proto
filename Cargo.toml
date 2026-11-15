@@ -26,3 +26,11 @@ ce-identity = { path = "../ce/crates/ce-identity" }
 [[bin]]
 name = "ce-cap-verify"
 path = "src/bin/ce-cap-verify.rs"
+
+[[bin]]
+name = "ce-cal"
+path = "src/bin/ce-cal.rs"
+
+# The language SDKs: thin wrappers over `cal::api::call` (docs/CAL.md section 8).
+[workspace]
+members = [".", "sdk/ts", "sdk/python"]

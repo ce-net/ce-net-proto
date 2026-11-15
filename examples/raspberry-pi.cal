@@ -1,0 +1,28 @@
+# The Raspberry Pi (docs/CAPABILITY-PROGRAMS.md 12.1).
+# Leif lets the planner agent let one other agent install one Python script on pi-01, once,
+# and nothing else. The script is named by repository, commit and content hash: "run.py" alone
+# would mean a different file on every machine.
+cal 1
+
+program pi_install {
+  install repo:huey-scripts/run.py@3f2a1c sha256:3f9b0d4d3e88a9987a8670f2ab9ff7b912448d8ade2bd369395d06e48c6feb51 to /opt/x/run.py on node:pi-01 mode 755
+}
+
+# Leif may-grant link: the planner holds the right to pass it on, not to use it.
+person:leif grants agent:planner {
+  may grant cell.install:install-file to anyone depth 1
+  on node:pi-01
+  until 2027-01-22T08:00Z
+  files under /opt/x
+  once
+  only pi_install
+  nonce 1
+}
+
+# The planner's link to the agent that installs. It inherits pi-01, /opt/x, once and the
+# program from the link above and narrows the time to one day.
+agent:planner grants agent:agent-b {
+  can cell.install:install-file
+  until 2027-01-16T08:00Z
+  nonce 2
+}

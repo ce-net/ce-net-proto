@@ -1,0 +1,20 @@
+[package]
+name = "ce-cal-wasm"
+version = "0.1.0"
+edition = "2024"
+description = "CAL (cell auth language) for JavaScript and TypeScript: parse, compile, explain and verify ce-net capability chains, in WebAssembly."
+license = "AGPL-3.0-only"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[dependencies]
+ce-net-proto = { path = "../.." }
+wasm-bindgen = "=0.2.130"
+
+# p256's std feature pulls in rand_core/getrandom; on wasm it must use the JS CSPRNG (CAL itself
+# draws no randomness: link nonces are passed in by the wrapper).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }

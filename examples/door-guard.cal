@@ -1,0 +1,19 @@
+# "always verify the auth code and talk to this all through the same systems agent before you
+# can pass through and do this" (docs/CAPABILITY-PROGRAMS.md 12.4): the guard checks the auth
+# code, then signs the exact request twice, as co-signer and as broker.
+cal 1
+
+person:leif grants agent:planner {
+  may grant door.gate:pass to anyone depth 1
+  on node:box-1
+  until 2027-01-22T08:00Z
+  cosign agent:auth-guard
+  via agent:auth-guard
+  nonce 50
+}
+
+agent:planner grants agent:agent-b {
+  can door.gate:pass
+  until 2027-01-16T08:00Z
+  nonce 51
+}

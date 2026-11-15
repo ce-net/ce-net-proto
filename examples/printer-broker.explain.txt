@@ -1,0 +1,28 @@
+A chain of 2 links. Each link is signed by its issuer and can only narrow the link above it; every use must satisfy every link.
+
+Link 0: person:leif grants agent:planner
+  link id   1498372bc551b96ca725894f9595d2c0dbb5743205e55e401e8f27fa0e2f0210
+  issuer    person:leif = p256:020217e617f0b6443928278f96999e69a23a4f2c152bdf6d6cdf66e5b80282d4ed
+  audience  agent:planner = ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b
+  This is the root: a node accepts the chain only if it trusts the issuer's key as a root.
+  Own use: agent:planner may not use this link itself; it can only grant.
+  Delegation: agent:planner may grant 'printer3d:print' to anyone, one link deep: the link it grants may grant nothing further.
+  Where: only on node:printer-1 = 6355691c178a8ff91007a7478afb955ef7352c63e7b25703984cf78b26e21a56.
+  When: until 2027-01-22 08:00:00 UTC (unix 1800604800).
+  Condition (via): every use must come through agent:printer-guard = ed25519:2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7, which signs its approval of that exact request.
+
+Link 1: agent:planner grants agent:agent-b
+  link id   edfc08164e41885d188fa3fe2f50a5cf145b0d69b63af175eeb9a6ddaea8db4e
+  issuer    agent:planner = ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b
+  audience  agent:agent-b = ed25519:a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0
+  Own use: agent:agent-b may 'printer3d:print'.
+  Delegation: nothing may be granted below this link (it is final).
+  Where: only on node:printer-1 = 6355691c178a8ff91007a7478afb955ef7352c63e7b25703984cf78b26e21a56.
+  When: until 2027-01-16 08:00:00 UTC (unix 1800086400).
+  Condition (via): every use must come through agent:printer-guard = ed25519:2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7, which signs its approval of that exact request.
+
+In short: the chain is held by agent:agent-b = ed25519:a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0.
+  It may 'printer3d:print', only on node:printer-1 = 6355691c178a8ff91007a7478afb955ef7352c63e7b25703984cf78b26e21a56, until 2027-01-16 08:00:00 UTC.
+  It may grant nothing further.
+  Every use must also meet these conditions:
+    every use must come through agent:printer-guard = ed25519:2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7, which signs its approval of that exact request.

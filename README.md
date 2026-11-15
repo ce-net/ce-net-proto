@@ -10,6 +10,32 @@ verify **offline** with nothing but the token and a root public key.
   regenerate with `CE_NET_PROTO_REGEN=1`); an independent Python verifier written from the spec:
   [`docs/reference/ce_cap_verify.py`](docs/reference/ce_cap_verify.py).
 
+## CAL, the cell auth language
+
+A small readable text that compiles to v3 capability links and programs and decompiles back;
+spec and grammar: [`docs/CAL.md`](docs/CAL.md). Every name in it is a ce-ref pinned by hash, full
+node id or key, so a compiled link means the same thing wherever it is read.
+
+```
+person:leif grants agent:planner {
+  may grant printer3d:print to anyone depth 1
+  on node:printer-1
+  until 2027-01-22T08:00Z
+  via agent:printer-guard
+}
+```
+
+```
+cargo install --path .
+ce-cal explain examples/raspberry-pi.cal --refs examples/cal.refs.json
+ce-cal compile examples/raspberry-pi.cal --refs examples/cal.refs.json --key leif.key --key planner.key
+ce-cal check <token> --refs examples/cal.refs.json --node node:pi-01 --as agent:agent-b --program b94f --content run.py
+```
+
+Examples (each with its checked-in `explain` output): [`examples/`](examples). SDKs over one JSON
+API: Rust (this crate, `cal` module; `cargo run --example explain`), TypeScript
+([`sdk/ts`](sdk/ts), wasm-bindgen) and Python ([`sdk/python`](sdk/python), C ABI).
+
 ## CLI
 
 ```
@@ -26,6 +52,9 @@ match; `--action` and `--holder` add the leaf checks.
 
 `cargo test` runs the ported ce-cap unit tests, the cross-implementation tests (needs `../ce`
 checked out next to this repo, dev-dependency only), the vector tests and the CLI tests.
+The CAL tests are `src/cal/tests.rs`, `tests/cal_examples.rs` (the examples against their
+`explain` text and against the v3 vectors) and `tests/cal_cli.rs`; the SDKs test with
+`npm test` in `sdk/ts` and `python3 -m unittest` in `sdk/python` (see their READMEs).
 
 ## License
 

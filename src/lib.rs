@@ -13,9 +13,12 @@
 //! - [`identity`]: [`NodeId`], [`Identity`], [`verify`](identity::verify).
 //! - [`program`]: capability programs (typed steps, ids, typing), CAPABILITY-PROGRAMS.md section 6.
 //! - [`v3`]: token format v3 types and strict canonical encoding (CAPABILITY-PROGRAMS.md).
+//! - [`cal`]: CAL, the cell auth language: readable text that compiles to v3 links and programs,
+//!   decompiles back, explains them in plain English and checks a request (docs/CAL.md).
 //! - [`verify_chain`]: node-independent offline check of a chain against one root key (what the
 //!   `ce-cap-verify` CLI runs).
 
+pub mod cal;
 pub mod cap;
 pub mod delegate;
 pub mod identity;

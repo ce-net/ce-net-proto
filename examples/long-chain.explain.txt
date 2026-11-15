@@ -1,0 +1,72 @@
+A chain of 3 links, carrying 1 program. Each link is signed by its issuer and can only narrow the link above it; every use must satisfy every link.
+
+Link 0: person:leif grants person:friend
+  link id   a969d39a7d7d875678c7b71d34aefe6981e48158d827ff75d3f0b376aa449798
+  issuer    person:leif = p256:020217e617f0b6443928278f96999e69a23a4f2c152bdf6d6cdf66e5b80282d4ed
+  audience  person:friend = ed25519:48075a597e721a156e2e0799de5cc0c5324dc6e7eaf1cdd46250868ec53215dd
+  This is the root: a node accepts the chain only if it trusts the issuer's key as a root.
+  Own use: person:friend may not use this link itself; it can only grant.
+  Delegation: person:friend may grant 'cell.install:install-file', 'net.egress:connect', 'proc.spawn:run' to anyone, up to 2 links deep.
+  Where: only on node:box-1 = 2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12.
+  When: until 2027-01-16 08:00:00 UTC (unix 1800086400).
+  Files: only paths under /srv/jobs/f.
+  CPU: at most 2 cores per process.
+  Memory: at most 1024 MB per process.
+  Counted: at most 5 uses at each node; a plain call is one use, and so is a program run (leaf, program, run), charged at its first step on that node.
+  Limit: net.egress.bytes_in at most 500 MB (500000000 bytes) (bytes received, in total).
+  Limit: net.egress.bytes_out at most 50 MB (50000000 bytes) (bytes sent, in total).
+  Limit: proc.spawn.wall_s at most 1 hour (wall-clock time per spawned process).
+  Network: only to any name ending in .example.org, TCP port 443.
+  Conditions: none on this link.
+
+Link 1: person:friend grants agent:friend-agent
+  link id   2e1000a9a29c04e10fb644867dc8379d4ec831e6e38b71c6e5f1755a98dbdad7
+  issuer    person:friend = ed25519:48075a597e721a156e2e0799de5cc0c5324dc6e7eaf1cdd46250868ec53215dd
+  audience  agent:friend-agent = ed25519:5e212c0980e4b39fc09721134aa02109374edfd260c0d3d03cb501c8d65457a9
+  Own use: agent:friend-agent may 'cell.install:install-file', 'proc.spawn:run'.
+  Delegation: agent:friend-agent may grant 'net.egress:connect' to anyone, one link deep: the link it grants may grant nothing further.
+  Where: only on node:box-1 = 2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12.
+  When: until 2027-01-15 20:00:00 UTC (unix 1800043200).
+  Files: only paths under /srv/jobs/f.
+  CPU: at most 1 core per process.
+  Memory: at most 512 MB per process.
+  Counted: at most 2 uses at each node; a plain call is one use, and so is a program run (leaf, program, run), charged at its first step on that node.
+  Limit: net.egress.bytes_in at most 100 MB (100000000 bytes) (bytes received, in total).
+  Limit: net.egress.bytes_out at most 10 MB (10000000 bytes) (bytes sent, in total).
+  Limit: proc.spawn.wall_s at most 10 minutes (wall-clock time per spawned process).
+  Network: only to api.example.org, TCP port 443.
+  Conditions: none on this link.
+
+Link 2: agent:friend-agent grants agent:job-sandbox
+  link id   161e870950d05410f6170d04608f18cd85f9dbfbae51b3bcc1f8f6a0b9f9610e
+  issuer    agent:friend-agent = ed25519:5e212c0980e4b39fc09721134aa02109374edfd260c0d3d03cb501c8d65457a9
+  audience  agent:job-sandbox = ed25519:17cb79fb2b4120f2b1ec65e4198d6e08b28e813feb01e4a400839b85e18080ce
+  Own use: agent:job-sandbox may 'net.egress:connect'.
+  Delegation: nothing may be granted below this link (it is final).
+  Where: only on node:box-1 = 2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12.
+  When: until 2027-01-15 20:00:00 UTC (unix 1800043200).
+  Files: only paths under /srv/jobs/f.
+  CPU: at most 1 core per process.
+  Memory: at most 512 MB per process.
+  Counted: at most 2 uses at each node; a plain call is one use, and so is a program run (leaf, program, run), charged at its first step on that node.
+  Limit: net.egress.bytes_in at most 100 MB (100000000 bytes) (bytes received, in total).
+  Limit: net.egress.bytes_out at most 10 MB (10000000 bytes) (bytes sent, in total).
+  Limit: proc.spawn.wall_s at most 10 minutes (wall-clock time per spawned process).
+  Network: only to api.example.org, TCP port 443.
+  Programs: may be used only to execute job (program id e7f9bbe9bd966fa2681b2a9cb604b1bd3d95259db4bfbdbe06042c93e8c08162).
+  Conditions: none on this link.
+
+Program job (program id e7f9bbe9bd966fa2681b2a9cb604b1bd3d95259db4bfbdbe06042c93e8c08162), 2 steps:
+  step 0: install repo:friend-jobs/job.py@8c1d2e3 (ce-ref://repo/1e9cca34a937f699f47233535168e0f02feea6c8a3ab844f63e16572388a7ff5/job.py), content sha256:5a0401886e5b2bd48eb8f688abec6513f98192b41212ccb892217408899e05e5 (73 bytes) as /srv/jobs/f/job.py, mode 0755, on node:box-1 = 2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12.
+          The node checks that the bytes hash to sha256:5a0401886e5b2bd48eb8f688abec6513f98192b41212ccb892217408899e05e5 before it writes them.
+  step 1: spawn the file step 0 installed (/srv/jobs/f/job.py, sha256:5a0401886e5b2bd48eb8f688abec6513f98192b41212ccb892217408899e05e5) once, to completion, only on node:box-1 = 2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12.
+          argv ["job.py"]; environment empty; working directory /srv/jobs/f.
+          Sandbox: 1 CPU core, 512 MB memory, at most 10 minutes; reads only its executable; writes /srv/jobs/f/out.
+          Network: only api.example.org, TCP port 443; at most 10 MB (10000000 bytes) out and 100 MB (100000000 bytes) in.
+          The runner checks the executable's bytes against its hash before it starts it.
+  Typed under the leaf: agent:job-sandbox could not execute it itself (program step 0: the capability does not grant 'cell.install:install-file').
+
+In short: the chain is held by agent:job-sandbox = ed25519:17cb79fb2b4120f2b1ec65e4198d6e08b28e813feb01e4a400839b85e18080ce.
+  It may 'net.egress:connect', only on node:box-1 = 2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12, until 2027-01-15 20:00:00 UTC, only to execute job.
+  It may grant nothing further.
+  No condition beyond the chain itself: no proof is needed at use.

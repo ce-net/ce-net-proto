@@ -1,0 +1,18 @@
+{
+  "name": "ce-cal",
+  "version": "0.1.0",
+  "description": "CAL, the cell auth language: parse, compile, explain and verify ce-net capability chains (WebAssembly build of the Rust crate).",
+  "license": "AGPL-3.0-only",
+  "main": "dist/ce-cal.js",
+  "types": "dist/ce-cal.d.ts",
+  "scripts": {
+    "build:wasm": "cargo build --release -p ce-cal-wasm --target wasm32-unknown-unknown && wasm-bindgen --target nodejs --out-dir pkg ../../target/wasm32-unknown-unknown/release/ce_cal_wasm.wasm",
+    "build": "tsc && mkdir -p dist/pkg && cp pkg/* dist/pkg/",
+    "example": "npm run build && node dist/example.js",
+    "test": "npm run build && node dist/test.js"
+  },
+  "devDependencies": {
+    "@types/node": "18.19.39",
+    "typescript": "5.4.5"
+  }
+}

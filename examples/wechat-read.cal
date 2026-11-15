@@ -1,0 +1,19 @@
+# "have you read the wechat chat before writing" (docs/CAPABILITY-PROGRAMS.md 12.4).
+# A message may be sent only by an agent the wechat reader cell attests has read the thread,
+# through its newest message, at most 10 minutes before.
+cal 1
+
+person:leif grants agent:planner {
+  may grant wechat.send:send to anyone depth 1
+  on node:leif-desk
+  until 2027-01-22T08:00Z
+  require read wechat:thread/family by cell:wechat.read@1 within 10m
+  nonce 30
+}
+
+# The condition is inherited: a child can add conditions, never drop one.
+agent:planner grants agent:writer {
+  can wechat.send:send
+  until 2027-01-16T08:00Z
+  nonce 31
+}

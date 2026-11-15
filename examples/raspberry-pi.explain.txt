@@ -1,0 +1,38 @@
+A chain of 2 links, carrying 1 program. Each link is signed by its issuer and can only narrow the link above it; every use must satisfy every link.
+
+Link 0: person:leif grants agent:planner
+  link id   4ce03fc8c57a2d136147dd67007b4df65024fe63d2d90659fbc9547594169459
+  issuer    person:leif = p256:020217e617f0b6443928278f96999e69a23a4f2c152bdf6d6cdf66e5b80282d4ed
+  audience  agent:planner = ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b
+  This is the root: a node accepts the chain only if it trusts the issuer's key as a root.
+  Own use: agent:planner may not use this link itself; it can only grant.
+  Delegation: agent:planner may grant 'cell.install:install-file' to anyone, one link deep: the link it grants may grant nothing further.
+  Where: only on node:pi-01 = db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d.
+  When: until 2027-01-22 08:00:00 UTC (unix 1800604800).
+  Files: only paths under /opt/x.
+  Counted: at most 1 use at each node; a plain call is one use, and so is a program run (leaf, program, run), charged at its first step on that node.
+  Programs: may be used only to execute pi_install (program id b94fb068a83def665282c3f370697ff165cef59fd1133b2a7b9cdcdaf8483b35).
+  Conditions: none on this link.
+
+Link 1: agent:planner grants agent:agent-b
+  link id   59f297cf33922e62a6310048dab6f1e6879f95eb3167bacd719cf69d7b30c2a2
+  issuer    agent:planner = ed25519:884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b
+  audience  agent:agent-b = ed25519:a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0
+  Own use: agent:agent-b may 'cell.install:install-file'.
+  Delegation: nothing may be granted below this link (it is final).
+  Where: only on node:pi-01 = db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d.
+  When: until 2027-01-16 08:00:00 UTC (unix 1800086400).
+  Files: only paths under /opt/x.
+  Counted: at most 1 use at each node; a plain call is one use, and so is a program run (leaf, program, run), charged at its first step on that node.
+  Programs: may be used only to execute pi_install (program id b94fb068a83def665282c3f370697ff165cef59fd1133b2a7b9cdcdaf8483b35).
+  Conditions: none on this link.
+
+Program pi_install (program id b94fb068a83def665282c3f370697ff165cef59fd1133b2a7b9cdcdaf8483b35), 1 step:
+  step 0: install repo:huey-scripts/run.py@3f2a1c (ce-ref://repo/b47ae72900538d9d902251c935592073814514e0a5db7f31b4731a2fc046f331/run.py), content sha256:3f9b0d4d3e88a9987a8670f2ab9ff7b912448d8ade2bd369395d06e48c6feb51 (26 bytes) as /opt/x/run.py, mode 0755, on node:pi-01 = db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d.
+          The node checks that the bytes hash to sha256:3f9b0d4d3e88a9987a8670f2ab9ff7b912448d8ade2bd369395d06e48c6feb51 before it writes them.
+  Typed under the leaf: every step is within what agent:agent-b may do.
+
+In short: the chain is held by agent:agent-b = ed25519:a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0.
+  It may 'cell.install:install-file', only on node:pi-01 = db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d, until 2027-01-16 08:00:00 UTC, only to execute pi_install.
+  It may grant nothing further.
+  No condition beyond the chain itself: no proof is needed at use.
