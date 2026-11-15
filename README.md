@@ -34,7 +34,7 @@ ce-cal check <token> --refs examples/cal.refs.json --node node:pi-01 --as agent:
 
 Examples (each with its checked-in `explain` output): [`examples/`](examples). SDKs over one JSON
 API: Rust (this crate, `cal` module; `cargo run --example explain`), TypeScript
-([`sdk/ts`](sdk/ts), wasm-bindgen) and Python ([`sdk/python`](sdk/python), C ABI).
+([`sdk/ts`](sdk/ts), wasm-bindgen) and the C ABI for Python and any C FFI ([`sdk/python`](sdk/python)).
 
 ## CLI
 
@@ -54,7 +54,7 @@ match; `--action` and `--holder` add the leaf checks.
 checked out next to this repo, dev-dependency only), the vector tests and the CLI tests.
 The CAL tests are `src/cal/tests.rs`, `tests/cal_examples.rs` (the examples against their
 `explain` text and against the v3 vectors) and `tests/cal_cli.rs`; the SDKs test with
-`npm test` in `sdk/ts` and `python3 -m unittest` in `sdk/python` (see their READMEs).
+`npm test` in `sdk/ts` (see its README).
 
 ## License
 

@@ -1,15 +1,14 @@
-# ce-cal for Python
+# ce-cal C ABI (for Python and any C FFI)
 
-CAL (the cell auth language, [`docs/CAL.md`](../../docs/CAL.md)) for Python: `ce_cal.parse`,
-`compile`, `sign`, `explain`, `decompile`, `verify`, a ctypes wrapper over the crate's C ABI
-([`ce_cal.h`](ce_cal.h): `ce_cal_call(op, json)` / `ce_cal_free`), which any language with a C
-FFI can call the same way. Every answer is the Rust verifier's own.
+CAL (the cell auth language, [`docs/CAL.md`](../../docs/CAL.md)) behind a C ABI
+([`ce_cal.h`](ce_cal.h)): `ce_cal_call(op, request_json)` returns a JSON string that the caller
+frees with `ce_cal_free`. The ops and their JSON are those of docs/CAL.md section 8 (`parse`,
+`compile`, `sign`, `explain`, `decompile`, `verify`); every answer is the Rust verifier's own.
 
 ```
-cargo build --release -p ce-cal-ffi     # target/release/libce_cal_ffi.so (or set CE_CAL_LIB)
-python3 -m unittest                     # in sdk/python
-python3 example.py
+cargo build --release -p ce-cal-ffi     # target/release/libce_cal_ffi.so
 ```
 
-[`example.py`](example.py) explains the Raspberry Pi example, compiles and signs it with the test
-keys of the conformance vectors, and verifies two requests.
+From Python, `ctypes.CDLL("libce_cal_ffi.so")`, with `ce_cal_call.restype = ctypes.c_void_p`,
+reads the answer with `ctypes.string_at` and frees it with `ce_cal_free`. The ctypes wrapper
+package is not in this repository yet.

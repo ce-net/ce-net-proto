@@ -291,8 +291,9 @@ A refusal is `{"ok": false, "error": {"line", "message", "suggestion"}}`.
 - **Rust**: this crate, module `cal` ([`examples/explain.rs`](../examples/explain.rs), `cargo run --example explain`).
 - **TypeScript / JavaScript**: [`sdk/ts`](../sdk/ts), the wasm-bindgen build of the crate with typed calls
   (`ce-cal.ts`, [`example.ts`](../sdk/ts/example.ts)).
-- **Python**: [`sdk/python`](../sdk/python), ctypes over the C ABI `ce_cal_call` / `ce_cal_free` ([`ce_cal.h`](../sdk/python/ce_cal.h),
-  usable from any language with a C FFI; [`example.py`](../sdk/python/example.py)).
+- **Python and any C FFI**: [`sdk/python`](../sdk/python), the C ABI `ce_cal_call` / `ce_cal_free`
+  ([`ce_cal.h`](../sdk/python/ce_cal.h)); Python calls it through `ctypes` (the ctypes package itself is not in this
+  repository yet).
 
 The wrappers draw link nonces from the platform's CSPRNG; the crate draws no randomness.
 
