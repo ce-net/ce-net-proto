@@ -53,8 +53,11 @@ pub const MAX_PROGRAMS: usize = 16;
 pub const MAX_TOKEN: usize = 1 << 20;
 
 /// `len(9) || "ce-cap-v3" || CapabilityV3(c)`: the bytes the issuer signs.
+///
+/// Encoding in-memory values to a `Vec` cannot fail (no size limit, every length known). Should it
+/// ever, this panics: an empty byte string would give every such link the same id and signed bytes.
 pub fn cap_bytes(c: &CapabilityV3) -> Vec<u8> {
-    bincode::serialize(&(CAP3_DOMAIN, c)).unwrap_or_default()
+    bincode::serialize(&(CAP3_DOMAIN, c)).expect("bincode of a v3 capability to a Vec is infallible")
 }
 
 /// `SHA-256(cap_bytes(c))`: names the link as a parent.
@@ -92,7 +95,7 @@ fn strict() -> impl Options {
 }
 
 fn body<T: Serialize>(links: &T, programs: &[Program]) -> Vec<u8> {
-    bincode::serialize(&(links, programs)).unwrap_or_default()
+    bincode::serialize(&(links, programs)).expect("bincode of a v3 token to a Vec is infallible")
 }
 
 impl TokenV3 {
@@ -128,9 +131,18 @@ impl TokenV3 {
         Ok(t)
     }
 
-    /// [`decode`](Self::decode) of a hex token (either case, surrounding whitespace trimmed).
+    /// [`decode`](Self::decode) of a hex token. Section 3.2: the token is lowercase hex, so an
+    /// uppercase digit is refused (one token, one spelling); whitespace around it (a trailing
+    /// newline in a file) is trimmed. The size bound is applied before any byte is decoded.
     pub fn from_hex(s: &str) -> Result<TokenV3> {
-        let b = hex::decode(s.trim()).map_err(|_| Error("capability token is not valid hex".into()))?;
+        let s = s.trim_matches(|c: char| c.is_ascii_whitespace());
+        if s.len() > 2 * MAX_TOKEN {
+            return Err(Error("capability token is too large".into()));
+        }
+        if !s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) {
+            return Err(Error("capability token is not lowercase hex".into()));
+        }
+        let b = hex::decode(s).map_err(|_| Error("capability token is not valid hex".into()))?;
         TokenV3::decode(&b)
     }
 }

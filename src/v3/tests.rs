@@ -80,7 +80,89 @@ fn round_trip_bytes_and_hex() {
         }
         _ => panic!("leaf must be V3"),
     }
-    assert_eq!(TokenV3::from_hex(&format!("  {}\n", t.to_hex().to_uppercase())).unwrap().encode(), b);
+    let hex = t.to_hex();
+    assert_eq!(hex, hex.to_lowercase());
+    assert_eq!(TokenV3::from_hex(&format!("  {hex}\n")).unwrap().encode(), b);
+}
+
+fn hex_refuses(s: &str) -> String {
+    match TokenV3::from_hex(s) {
+        Ok(_) => panic!("decoded a hex token that must be refused"),
+        Err(e) => e.0,
+    }
+}
+
+#[test]
+fn hex_is_lowercase_and_bounded() {
+    let hex = token().to_hex();
+    assert!(hex_refuses(&hex.to_uppercase()).contains("lowercase"));
+    assert!(hex_refuses(&hex.replacen("43", "4 3", 1)).contains("lowercase"), "inner whitespace");
+    assert!(hex_refuses(&hex[..hex.len() - 1]).contains("hex"), "odd length");
+    assert!(hex_refuses(&"0".repeat(2 * MAX_TOKEN + 2)).contains("too large"));
+    assert!(refuses(&vec![0u8; MAX_TOKEN + 1]).contains("too large"));
+}
+
+/// The variant index one past the last of every v3 enum, and a tag that is neither 0 nor 1 on an
+/// option, are decode errors (sections 1 and 13): nothing is skipped.
+#[test]
+fn every_enum_refuses_the_next_variant() {
+    fn bad<T: serde::Serialize + serde::de::DeserializeOwned>(v: &T, next: u32) {
+        let mut b = bincode::serialize(v).unwrap();
+        assert!(strict().deserialize::<T>(&b).is_ok(), "the unmodified value decodes");
+        b[..4].copy_from_slice(&next.to_le_bytes());
+        assert!(strict().deserialize::<T>(&b).is_err(), "variant {next} must be refused");
+        b[..4].copy_from_slice(&u32::MAX.to_le_bytes());
+        assert!(strict().deserialize::<T>(&b).is_err());
+    }
+    bad(&Key::Ed25519([1; 32]), 2);
+    bad(&Sig::Ed25519([1; 64]), 3);
+    bad(&AudienceSet::Any, 2);
+    bad(&UsePer::Link, 2);
+    bad(&Caveat::Uses { max: 1, per: UsePer::Link }, 4);
+    bad(&ResourceV3::Any, 5);
+    bad(&HostPat::Name("a.example".into()), 3);
+    bad(&Proto::Tcp, 2);
+    bad(&token().links[0], 2);
+    // option<Delegate>: tag 2.
+    let mut b = bincode::serialize(&Some(Delegate { abilities: vec!["a".into()], audience: AudienceSet::Any, depth: 1 })).unwrap();
+    b[0] = 2;
+    assert!(strict().deserialize::<Option<Delegate>>(&b).is_err());
+    // a non-UTF-8 ability string.
+    let mut b = bincode::serialize(&vec!["ab".to_string()]).unwrap();
+    *b.last_mut().unwrap() = 0xff;
+    assert!(strict().deserialize::<Vec<String>>(&b).is_err());
+}
+
+/// `P256_HALF_N` is floor(n / 2) of the curve order the `p256` crate uses; `s == n/2` is low,
+/// `n/2 + 1` is not.
+#[test]
+fn low_s_bound_is_half_the_group_order() {
+    use p256::elliptic_curve::{Curve, bigint::Encoding};
+    let n = p256::NistP256::ORDER.to_be_bytes();
+    let mut half = [0u8; 32];
+    let mut carry = 0u8;
+    for (h, b) in half.iter_mut().zip(n.iter()) {
+        *h = (b >> 1) | (carry << 7);
+        carry = b & 1;
+    }
+    assert_eq!(half, P256_HALF_N);
+    let mut rs = [1u8; 64];
+    rs[32..].copy_from_slice(&P256_HALF_N);
+    assert!(Sig::P256(rs).canonical());
+    rs[63] += 1;
+    assert!(!Sig::P256(rs).canonical());
+}
+
+#[test]
+fn signed_bytes_differ_per_link() {
+    let a = v3_cap(p256_key(), p256_key(), None);
+    let mut b = a.clone();
+    b.nonce += 1;
+    assert!(!cap_bytes(&a).is_empty());
+    assert_ne!(cap_id(&a), cap_id(&b));
+    let mut c = a.clone();
+    c.delegate = None;
+    assert_ne!(cap_id(&a), cap_id(&c), "the delegation right is signed");
 }
 
 #[test]
@@ -202,4 +284,11 @@ fn size_bounds() {
     let leaf = t.links[0].clone();
     t.links = vec![leaf; MAX_LINKS + 1];
     assert!(refuses(&t.encode()).contains("links"));
+    // The ability bound is per list, token-wide: a V1 head link is held to it too.
+    let mut t = token();
+    if let Link::V1(s) = &mut t.links[0] {
+        s.cap.abilities = vec!["exec".into(); MAX_ABILITIES + 1];
+    }
+    assert!(refuses(&t.encode()).contains("link 0: not canonical"));
+    assert!(with_cap(|c| c.abilities = vec!["exec".into(); MAX_ABILITIES + 1]).contains("link 2: not canonical"));
 }

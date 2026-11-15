@@ -23,9 +23,11 @@ pub fn check_token(t: &TokenV3) -> Result<()> {
     Ok(())
 }
 
-/// One link. A V1 link is canonical by the v1 rules (its bincode is canonical already).
+/// One link. A V1 link is canonical by the v1 rules (the token's re-encoding check already holds
+/// its bytes to one form); the per-list ability bound of section 3.4 is token-wide, so it applies.
 pub fn check_link(l: &Link) -> Result<(), String> {
     match l {
+        Link::V1(s) if s.cap.abilities.len() > MAX_ABILITIES => Err(format!("more than {MAX_ABILITIES} abilities")),
         Link::V1(_) => Ok(()),
         Link::V3 { cap, sig } => {
             if !sig.canonical() {
