@@ -7,6 +7,9 @@ golden vector in `tests/vectors.json` stays valid and is verified exactly as tod
 `tests/v3_vectors.json` (section 12.5). The Python reference verifier is not written; until a second implementation
 passes the vectors this text may still change.
 
+CAL, the cell auth language ([CAL.md](CAL.md)), is the readable text form of these links and programs: it compiles to
+them, decompiles from them and explains them; every name in it is a pinned ce-ref.
+
 Leif, 2026-11-15: "one permission from me must be able to allow you to once install a permission elsewhere. permissions
 are recursive. this is a must. you must be able to chain permissions otherwise this system doesn't scale. i must be able
 to allow you to allow another agent to install a python script on my raspberry pi. through code. and nothing else is
@@ -227,6 +230,8 @@ know):
 Leif, 2026-11-15: "not just this 4 link chain also chains like 'have you read the wechat chat before writing' and
 'always verify the auth code and talk to this all through the same systems agent before you can pass through and do
 this' and 'always talk to this agent if you want to access the 3d printer'".
+And, of the last rule: "i meant 3d printer." Every quote of it in this document and in the tests reads "the 3d
+printer"; its abilities and its gate cell are named `printer3d` (`printer3d:print`, `printer3d.gate`).
 
 A condition is a caveat that the chain alone cannot satisfy: each use must bring a signed **proof** from someone else.
 Conditions are signed into the link like every caveat, are checked at verify like everything else, and only narrow
@@ -237,6 +242,8 @@ Party = enum {
   0 Key(Key)                 -- exactly this principal
   1 Cell(string)             -- the cell serving this api, e.g. "printer3d.gate": the executing node resolves the
                              -- api to the keys it trusts for it; a verifier that cannot resolve it refuses
+                             -- CAL (docs/CAL.md) writes a cell party with its major version, cell:printer3d.gate@1,
+                             -- and stores the string "printer3d.gate@1": the node resolves that exact string
 }
 
 Claim = enum {               -- a typed predicate about something done
@@ -326,7 +333,7 @@ say whether they will be met.
 |---|---|
 | "have you read the wechat chat before writing" | `Requires([{ witness: Cell("wechat.read"), claim: ReadThrough { source: "wechat", thread: "<thread id>", upto_msg: None }, fresh_within_s: Some(600) }])` on the link that grants `wechat.send:send`: the wechat cell attests the agent's key read the thread through its newest message at most 10 minutes ago |
 | "always verify the auth code and talk to this all through the same systems agent before you can pass through and do this" | `CoSign([{ by: <the system's guardian agent>, per: Use }])` together with `Via([Key(<the same agent>)])`: the agent checks the auth code, then signs the exact request both as approval and as broker; the same key in both makes it "the same systems agent" |
-| "always talk to this agent if you want to access the 3d printer" | `Via([Cell("printer3d.gate")])` (or `Key(<the 3D-printer agent>)`) on the link that grants `printer3d:*`: the printer accepts a job only with the printer agent's signed approval of that job |
+| "always talk to this agent if you want to access the 3d printer" | `Via([Cell("printer3d.gate")])` (or `Key(<the 3d printer's agent>)`) on the link that grants `printer3d:*`: the printer accepts a job only with the printer agent's signed approval of that job |
 
 ## 5. Verification
 
@@ -491,8 +498,8 @@ the program from the next; a step runs at most once per `(leaf id, program_id, r
 4. the step names this node; all earlier steps on this node have a completed record in the node's run log for this
    `(leaf id, program_id, run)`, and earlier steps on **other** nodes that this step depends on (`Exe::Output`) are on this
    node by rule 6.2;
-5. charge counters (section 7). `Uses` with `per: Link` is charged **once per `(program, run)` at this node**, when
-   the node runs its first step of that run. `Uses` with `per: Action` is charged per step, the action being the
+5. charge counters (section 7). `Uses` with `per: Link` is charged **once per `(leaf, program, run)` at this node**,
+   when the node runs its first step of that run (two leaves under one link that run the same program each pay a use). `Uses` with `per: Action` is charged per step, the action being the
    step's most specific ability from 6.2 (`InstallCell`: `cell.install:<verb>:<api>@<host>`). Cumulative limits are
    charged as they are consumed;
 6. run the step; write the receipt.

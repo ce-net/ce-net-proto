@@ -1,7 +1,7 @@
 //! Mint tests, third file: the conditions of section 4.1 (`Requires`, `CoSign`, `Via`) narrow only
 //! one way. A child may add entries and tighten freshness; it may never drop, swap or loosen one.
 //! The three chains are Leif's examples: read the wechat chat first, the system's guardian agent
-//! signs and brokers every use, the 3D printer is reached only through its agent.
+//! signs and brokers every use, the 3d printer is reached only through its agent.
 
 use super::mint::{Grant, attenuate, extend, inherit_conditions, mint_root, root_token};
 use super::narrow::fresh_no_looser;
