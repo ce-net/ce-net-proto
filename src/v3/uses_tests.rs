@@ -1,5 +1,6 @@
 //! Burn-log tests (section 7): the counter key bytes, replay refusal through `authorize_v3`,
-//! all-or-nothing charging, once per run, the clock-rollback guard, prune, torn tails and damage.
+//! all-or-nothing charging, once per run, the clock-rollback guard, prune, torn tails and damage,
+//! and that a counted link without an expiry or a finite set of nodes cannot be minted.
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -131,6 +132,39 @@ fn per_link_is_charged_once_per_program_run() {
 }
 
 #[test]
+fn a_run_under_another_leaf_is_another_run() {
+    let mut log = BurnLog::open(&temp_log("leaf")).unwrap();
+    let c = [counted(1, 1, UsePer::Link, T)];
+    let run = Some(([5; 32], 1));
+    assert!(log.charge(&HERE, NOW, &charge(&c, "step0", run)).is_ok());
+    let other_leaf = Charge { leaf: [8; 32], ..charge(&c, "step0", run) };
+    assert_eq!(log.charge(&HERE, NOW, &other_leaf).unwrap_err(), "capability used up", "same link, program and run number, new leaf");
+    assert_eq!(log.count(&counter_key(&[1; 32], &HERE, "")), 1);
+}
+
+#[test]
+fn a_refusal_writes_nothing() {
+    let path = temp_log("refusal");
+    let mut log = BurnLog::open(&path).unwrap();
+    let c = [counted(1, 1, UsePer::Link, T)];
+    log.charge(&HERE, NOW, &charge(&c, "a", None)).unwrap();
+    let len = std::fs::metadata(&path).unwrap().len();
+    let both = [counted(2, 5, UsePer::Link, T), counted(1, 1, UsePer::Link, T)];
+    assert_eq!(log.charge(&HERE, NOW, &charge(&both, "a", None)).unwrap_err(), "capability used up");
+    let odd = [Counted { uses: Some(Caveat::Programs(vec![[0; 32]])), ..counted(3, 1, UsePer::Link, T) }];
+    assert_eq!(log.charge(&HERE, NOW, &charge(&odd, "a", None)).unwrap_err(), "counted link does not carry Uses");
+    // An action no frame can hold: written, it would make the whole log unreadable.
+    let free = [counted(4, 9, UsePer::Link, T)];
+    let long = "talk:".to_string() + &"x".repeat(1 << 17);
+    assert_eq!(log.charge(&HERE, NOW, &charge(&free, &long, None)).unwrap_err(), "burn record is too large (action too long)");
+    assert_eq!(std::fs::metadata(&path).unwrap().len(), len);
+    drop(log);
+    let log = BurnLog::open(&path).unwrap();
+    assert_eq!(log.count(&counter_key(&[2; 32], &HERE, "")), 0);
+    assert_eq!(log.count(&counter_key(&[4; 32], &HERE, "")), 0);
+}
+
+#[test]
 fn clock_rollback_refuses_counted_use() {
     let path = temp_log("clock");
     let mut log = BurnLog::open(&path).unwrap();
@@ -163,6 +197,34 @@ fn prune_drops_old_records_but_keeps_the_clock() {
 }
 
 #[test]
+fn burns_after_a_prune_land_in_the_new_file() {
+    let path = temp_log("prune2");
+    let mut log = BurnLog::open(&path).unwrap();
+    let c = [counted(1, 3, UsePer::Link, T)];
+    log.charge(&HERE, NOW, &charge(&c, "a", None)).unwrap();
+    assert_eq!(log.prune(NOW).unwrap(), 0);
+    assert_eq!(log.prune(NOW).unwrap(), 0, "the clock mark is not a record");
+    assert!(super::uses_file::same_file(&std::fs::File::open(&path).unwrap(), &path));
+    assert_eq!(BurnLog::open(&path).unwrap_err(), "burn log is held by another process", "the new file is locked too");
+    log.charge(&HERE, NOW, &charge(&c, "a", None)).unwrap();
+    drop(log);
+    assert_eq!(BurnLog::open(&path).unwrap().count(&counter_key(&[1; 32], &HERE, "")), 2);
+}
+
+#[test]
+fn a_replaced_file_is_not_the_log() {
+    let path = temp_log("replaced");
+    drop(BurnLog::open(&path).unwrap());
+    let old = std::fs::File::open(&path).unwrap();
+    assert!(super::uses_file::same_file(&old, &path));
+    let other = path.with_extension("other");
+    std::fs::write(&other, b"x").unwrap();
+    std::fs::rename(&other, &path).unwrap();
+    assert!(!super::uses_file::same_file(&old, &path), "a handle on the file a prune renamed away");
+    assert!(BurnLog::open(&path).is_err(), "and what replaced it here is no burn log");
+}
+
+#[test]
 fn burn_refuses_unbounded_or_expired_links() {
     let mut log = BurnLog::open(&temp_log("expiry")).unwrap();
     let forever = [counted(1, 1, UsePer::Link, 0)];
@@ -186,6 +248,12 @@ fn torn_tail_is_cut_and_damage_refused() {
     b[14] ^= 1;
     std::fs::write(&path, &b).unwrap();
     assert!(BurnLog::open(&path).unwrap_err().starts_with("burn log is damaged"));
+    // A creation torn inside the header burned nothing: the header is completed.
+    let path = temp_log("header");
+    drop(BurnLog::open(&path).unwrap());
+    std::fs::write(&path, b"CEB").unwrap();
+    BurnLog::open(&path).unwrap().charge(&HERE, NOW, &charge(&c, "a", None)).unwrap();
+    assert_eq!(BurnLog::open(&path).unwrap().count(&counter_key(&[1; 32], &HERE, "")), 1);
 }
 
 #[test]
@@ -225,4 +293,12 @@ fn counted_links_name_finite_nodes_and_expire() {
     c.caveats.not_after = 0;
     c.resource = ResourceV3::Any;
     assert!(check_counted(&c).is_ok(), "an uncounted link needs neither");
+    // And the mint runs the rule: no counted link without an expiry or a finite set of nodes.
+    let issuer = Signer::ed25519(&[1; 32]);
+    let mut g = grant(issuer.key(), 1);
+    g.caveats.not_after = 0;
+    assert!(root_token(&issuer, g).is_err());
+    let mut g = grant(issuer.key(), 1);
+    g.resource = ResourceV3::Any;
+    assert!(root_token(&issuer, g).is_err());
 }

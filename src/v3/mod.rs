@@ -23,6 +23,7 @@ pub mod narrow;
 pub mod sign;
 pub mod types;
 pub mod uses;
+mod uses_file;
 pub mod verify;
 pub mod verify_cond;
 pub mod webauthn;
