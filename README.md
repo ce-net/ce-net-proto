@@ -10,6 +10,25 @@ verify **offline** with nothing but the token and a root public key.
   regenerate with `CE_NET_PROTO_REGEN=1`); an independent Python verifier written from the spec:
   [`docs/reference/ce_cap_verify.py`](docs/reference/ce_cap_verify.py).
 
+## Quickstart
+
+Use it as a library (Rust 1.85 or newer, edition 2024):
+
+```toml
+[dependencies]
+ce-net-proto = { git = "https://github.com/ce-net/ce-net-proto" }
+```
+
+Or build and try the tools from a clone:
+
+```
+git clone https://github.com/ce-net/ce-net-proto
+cd ce-net-proto
+cargo test --workspace
+cargo run --example explain
+cargo run --bin ce-cal -- explain examples/raspberry-pi.cal --refs examples/cal.refs.json
+```
+
 ## CAL, the cell auth language
 
 A small readable text that compiles to v3 capability links and programs and decompiles back;
@@ -50,14 +69,18 @@ match; `--action` and `--holder` add the leaf checks.
 
 ## Tests
 
-`cargo test` runs the ported ce-cap unit tests, the cross-implementation tests (needs `../ce`
-checked out next to this repo, dev-dependency only), the vector tests and the CLI tests.
+`cargo test --workspace` runs the ported ce-cap unit tests, the vector tests and the CLI tests.
+The cross-implementation tests against the in-tree `ce-cap` live in [`compat/`](compat), outside the
+workspace, because they need the `ce` repo checked out next to this one:
+`cargo test --manifest-path compat/Cargo.toml`.
 The CAL tests are `src/cal/tests.rs`, `tests/cal_examples.rs` (the examples against their
 `explain` text and against the v3 vectors) and `tests/cal_cli.rs`; the SDKs test with
 `npm test` in `sdk/ts` (see its README).
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
-AGPL-3.0-only, as a **placeholder** matching `ce`. For an open protocol crate meant for third-party
-verifiers a permissive license (Apache-2.0 / MIT) is likely the better fit; relicensing is Leif's
-decision and has not been made.
+Licensed under the Apache License, Version 2.0 ([LICENSE](LICENSE)). See [NOTICE](NOTICE).

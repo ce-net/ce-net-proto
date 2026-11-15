@@ -2,7 +2,7 @@
   "name": "ce-cal",
   "version": "0.1.0",
   "description": "CAL, the cell auth language: parse, compile, explain and verify ce-net capability chains (WebAssembly build of the Rust crate).",
-  "license": "AGPL-3.0-only",
+  "license": "Apache-2.0",
   "main": "dist/ce-cal.js",
   "types": "dist/ce-cal.d.ts",
   "scripts": {

@@ -3,7 +3,7 @@ name = "ce-cal-wasm"
 version = "0.1.0"
 edition = "2024"
 description = "CAL (cell auth language) for JavaScript and TypeScript: parse, compile, explain and verify ce-net capability chains, in WebAssembly."
-license = "AGPL-3.0-only"
+license = "Apache-2.0"
 publish = false
 
 [lib]

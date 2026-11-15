@@ -1,0 +1,17 @@
+[package]
+name = "ce-net-proto-compat"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+description = "Byte-for-byte compatibility tests against the in-tree ce-cap. Needs the ce repo checked out next to ce-net-proto; not part of the default workspace."
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+ce-net-proto = { path = ".." }
+
+[dev-dependencies]
+ce-cap = { path = "../../ce/crates/ce-cap" }
+ce-identity = { path = "../../ce/crates/ce-identity" }

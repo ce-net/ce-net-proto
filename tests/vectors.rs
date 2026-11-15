@@ -181,9 +181,9 @@ fn nid(v: &Value) -> NodeId {
     hex::decode(v.as_str().unwrap()).unwrap().try_into().unwrap()
 }
 
-/// Check every vector from the FILE (not the generator) against both implementations.
+/// Check every vector from the FILE (not the generator).
 #[test]
-fn vectors_verify_in_both_implementations() {
+fn vectors_verify() {
     let v: Value = serde_json::from_str(&std::fs::read_to_string(PATH).unwrap()).unwrap();
     let mut n = 0;
     for c in v["chains"].as_array().unwrap() {
@@ -198,25 +198,20 @@ fn vectors_verify_in_both_implementations() {
         let (self_id, req, action) = (nid(&a["self_id"]), nid(&a["requester"]), a["action"].as_str().unwrap());
 
         let nc = decode_chain(token).unwrap();
-        let oc = ce_cap::decode_chain(token).unwrap();
-        // Per-link bytes match both implementations.
-        for ((l, nl), ol) in c["links"].as_array().unwrap().iter().zip(&nc).zip(&oc) {
+        // Per-link bytes match the vectors (compat/tests/vectors.rs also checks them against ce-cap).
+        for (l, nl) in c["links"].as_array().unwrap().iter().zip(&nc) {
             assert_eq!(l["cap_bytes"].as_str().unwrap(), h(&cap_bytes(&nl.cap)));
-            assert_eq!(l["cap_bytes"].as_str().unwrap(), h(&ce_cap::cap_bytes(&ol.cap)));
-            assert_eq!(l["cap_id"].as_str().unwrap(), h(&ol.id()));
+            assert_eq!(l["cap_id"].as_str().unwrap(), h(&nl.id()));
         }
         let vr = verify_chain(&nc, &root, now, &is_rev).map(|_| ());
         assert_eq!(result_json(&vr), c["verify_chain"], "{}", c["name"]);
         let nr = authorize(&self_id, &[root], &tags, now, &req, action, &nc, &is_rev);
-        let or = ce_cap::authorize(&self_id, &[root], &tags, now, &req, action, &oc, &is_rev);
         assert_eq!(result_json(&nr), a["expect"], "{}", c["name"]);
-        assert_eq!(result_json(&or), a["expect"], "ce-cap: {}", c["name"]);
         n += 1;
     }
     assert!(n >= 10);
     for r in v["revocations"].as_array().unwrap() {
         let b = hex::decode(r["encoded"].as_str().unwrap()).unwrap();
         assert!(SignedRevocation::decode(&b).unwrap().verify_sig().is_ok());
-        assert!(ce_cap::SignedRevocation::decode(&b).unwrap().verify_sig().is_ok());
     }
 }
