@@ -5,6 +5,7 @@
 //! v1-before-v3 order, signature type against issuer key) belong to the verifier.
 
 use super::{Caveat, CapabilityV3, Delegate, Link, MAX_ABILITIES, MAX_LINKS, MAX_PROGRAMS, TokenV3};
+use super::cond;
 use super::types::AudienceSet;
 use crate::program::{egress_canonical, sorted_unique, sorted_unique_by_encoding};
 use crate::{Error, Result};
@@ -97,5 +98,8 @@ fn check_caveat(c: &Caveat) -> Result<(), String> {
         Caveat::Programs(ids) => {
             if !ids.is_empty() && sorted_unique(ids) { Ok(()) } else { Err("Programs must be sorted, unique, non-empty".into()) }
         }
+        Caveat::Requires(rs) => cond::check_requires(rs),
+        Caveat::CoSign(cs) => cond::check_cosign(cs),
+        Caveat::Via(bs) => cond::check_via(bs),
     }
 }

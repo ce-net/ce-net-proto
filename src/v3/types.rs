@@ -7,6 +7,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::cond::{CoSigner, Party, Requirement};
 use crate::cap::{Caveats, SignedCapability};
 use crate::program::{EgressRule, Hash, Limit, ResourceV3};
 
@@ -137,6 +138,14 @@ pub enum Caveat {
     Egress(Vec<EgressRule>),
     /// 3: program ids this subtree may only execute; sorted, unique, non-empty.
     Programs(Vec<Hash>),
+    /// 4: each entry must be proved at every use by a witness's attestation (section 4.1); sorted
+    /// by encoding, unique, non-empty.
+    Requires(Vec<Requirement>),
+    /// 5: each entry's principal signs the exact request of every use; sorted, unique, non-empty.
+    CoSign(Vec<CoSigner>),
+    /// 6: every use arrives through each of these brokers with its signed approval; sorted,
+    /// unique, non-empty.
+    Via(Vec<Party>),
 }
 
 impl Caveat {
@@ -147,7 +156,16 @@ impl Caveat {
             Caveat::Limits(_) => 1,
             Caveat::Egress(_) => 2,
             Caveat::Programs(_) => 3,
+            Caveat::Requires(_) => 4,
+            Caveat::CoSign(_) => 5,
+            Caveat::Via(_) => 6,
         }
+    }
+
+    /// A condition (section 4.1): met only by proofs presented with each use, never by the chain
+    /// alone. A verifier that is handed no proofs must refuse a chain carrying one.
+    pub fn is_condition(&self) -> bool {
+        matches!(self, Caveat::Requires(_) | Caveat::CoSign(_) | Caveat::Via(_))
     }
 }
 

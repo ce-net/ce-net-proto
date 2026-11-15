@@ -2,7 +2,8 @@
 //!
 //! This module holds the types ([`types`]), the signed bytes ([`cap_bytes`], [`cap_id`]), the wire
 //! form ([`TokenV3`]: magic `CEC3`, links, program bodies) and the canonical-form rules of section
-//! 3.4 ([`canon`]). Decoding is strict, unlike v1: trailing bytes, unknown variants, invalid bools
+//! 3.4 ([`canon`]). [`cond`] holds the conditions of section 4.1 (`Requires`, `CoSign`, `Via`): their
+//! types, the bytes a witness, co-signer or broker signs, and the proofs of one use. Decoding is strict, unlike v1: trailing bytes, unknown variants, invalid bools
 //! and non-canonical values are refused. [`mint`] signs root and attenuated links ([`sign`], Ed25519
 //! and P-256) and refuses any child wider than its parent ([`narrow`]). [`verify`] checks a chain
 //! (section 5.1) and authorizes one request at one node (section 5.2), WebAuthn included
@@ -13,6 +14,7 @@
 //! verified by the v1 code alone.
 
 pub mod canon;
+pub mod cond;
 pub mod mint;
 pub mod narrow;
 pub mod sign;
@@ -21,6 +23,8 @@ pub mod uses;
 pub mod verify;
 pub mod webauthn;
 
+#[cfg(test)]
+mod cond_tests;
 #[cfg(test)]
 mod mint_guard_tests;
 #[cfg(test)]
@@ -36,6 +40,7 @@ use bincode::Options;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
+pub use cond::*;
 pub use types::*;
 
 use crate::program::{Hash, Program};

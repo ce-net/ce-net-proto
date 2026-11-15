@@ -155,7 +155,8 @@ re-delegate). A v1 `NodeId` is `Key::Ed25519` of the same bytes.
 
 A link is refused (`"link i: not canonical"`) unless: `v == 3`; `ext` holds at most one caveat per variant, in
 ascending variant order; every list this document calls sorted is sorted and unique; `delegate`, when present, has
-`depth >= 1` and non-empty `abilities`; P-256 signatures are low-S; the token has at most `MAX_LINKS = 64` links,
+`depth >= 1` and non-empty `abilities`; the condition lists of section 4.1 are canonical; P-256 signatures are low-S;
+the token has at most `MAX_LINKS = 64` links,
 `MAX_ABILITIES = 64` abilities per list, `MAX_PROGRAMS = 16` programs and `MAX_TOKEN = 1 MiB` bytes. The link limit is
 a parser bound, not a policy: policy depth is `delegate.depth`.
 
@@ -167,6 +168,9 @@ Caveat = enum {
   1 Limits  (seq<Limit>)                        -- sorted by name, unique
   2 Egress  (seq<EgressRule>)                   -- sorted, unique; an empty list = no network at all
   3 Programs(seq<bytes32>)                      -- program ids, sorted, unique, non-empty; section 6
+  4 Requires(seq<Requirement>)                  -- conditions, section 4.1
+  5 CoSign  (seq<CoSigner>)                     -- conditions, section 4.1
+  6 Via     (seq<Party>)                        -- conditions, section 4.1
 }
 
 UsePer = enum { 0 Link, 1 Action }
@@ -197,9 +201,14 @@ same variant and:
 | `Limits` | every parent name appears in the child with `child.max <= parent.max` (the child may add names) |
 | `Egress` | every child rule is covered by one parent rule: same `proto`, child ports a subset, and host covered (`Name` by an equal `Name`, by a `Suffix` it ends with, or by a `Cidr` never; `Suffix` by an equal or shorter matching `Suffix`; `Cidr` by a `Cidr` that contains it) |
 | `Programs` | every child id is in the parent's list |
+| `Requires` | every parent entry appears in the child with the same `witness` and `claim` and a freshness no looser: `child.fresh_within_s <= parent.fresh_within_s`, where `None` (any age) is looser than every `Some` (the child may add entries) |
+| `CoSign` | every parent entry appears in the child unchanged (the child may add co-signers) |
+| `Via` | every parent broker appears in the child unchanged (the child may add brokers) |
 
 A child may add a variant the parent lacks. Because every link's counters are charged on every use (section 7), a
-child that adds its own `Uses` only tightens.
+child that adds its own `Uses` only tightens. The three condition variants are lists of things that must ALL hold, so
+for them narrowing runs the other way round from `Programs`: a longer list is narrower, and a child that leaves out one
+inherited entry is refused (`"link i: caveats are broader than the parent"`).
 
 **Limit names** defined here (a cell defines the names under its own api, and refuses a name under its api it does not
 know):
@@ -211,6 +220,112 @@ know):
 | `proc.spawn.wall_s` | wall-clock seconds a spawned process may live | per run |
 | `proc.spawn.procs` | live processes in the sandbox at once | ceiling |
 | any other `<api>.<name>` | set by that cell | ceiling unless the cell documents otherwise |
+
+### 4.1 Conditions: `Requires`, `CoSign`, `Via`
+
+Leif, 2026-11-15: "not just this 4 link chain also chains like 'have you read the wechat chat before writing' and
+'always verify the auth code and talk to this all through the same systems agent before you can pass through and do
+this' and 'always talk to this agent if you want to access the 3d printer'".
+
+A condition is a caveat that the chain alone cannot satisfy: each use must bring a signed **proof** from someone else.
+Conditions are signed into the link like every caveat, are checked at verify like everything else, and only narrow
+along a chain (the table above): whoever holds a link below a condition can add conditions and can never drop one.
+
+```
+Party = enum {
+  0 Key(Key)                 -- exactly this principal
+  1 Cell(string)             -- the cell serving this api, e.g. "printer3d.gate": the executing node resolves the
+                             -- api to the keys it trusts for it; a verifier that cannot resolve it refuses
+}
+
+Claim = enum {               -- a typed predicate about something done
+  0 ReadThrough { source: string, thread: string, upto_msg: option<string> }
+                             -- the subject has read `thread` of `source` through message `upto_msg`. In a
+                             -- Requirement, None = through whatever was newest when attested (bound it with
+                             -- fresh_within_s); an attestation always names the message
+  1 Fact { name: string, value: bytes }
+                             -- cell-defined, name is "<api>.<name>"; value is matched byte for byte
+}
+
+Requirement = struct {       -- Requires: proof that something was done first
+  witness        : Party     -- who must have signed the attestation
+  claim          : Claim     -- what it must state
+  fresh_within_s : option<u64>   -- Some(n), n >= 1: at most n seconds old at use; None: any age
+}
+
+CoSignPer = enum { 0 Use }   -- every use carries its own signature
+
+CoSigner = struct {          -- CoSign: a second signature on every use
+  by  : Key                  -- e.g. a system's guardian agent
+  per : CoSignPer
+}
+                             -- Via(seq<Party>): each entry is a broker every use must pass through
+```
+
+Canonical form (section 3.4): each list holds 1 to `MAX_CONDITIONS = 16` entries, sorted ascending by encoding, unique;
+`Requires` holds one entry per `(witness, claim)`; `fresh_within_s` is never `Some(0)`; every string holds 1 to
+`MAX_COND_STR = 256` bytes and a `Fact.value` at most 256; keys are well-formed.
+
+**What is signed at use.** The proofs travel beside the token (they are made per use, the token is not):
+
+```
+AttestationBody = struct { witness: Key, subject: Key, claim: Claim, at: u64 }   -- `subject` did `claim`, seen at `at`
+Attestation     = struct { body: AttestationBody, sig: Sig }
+
+UseRequest = struct {        -- the exact request of one use
+  leaf      : bytes32        -- cap id of the leaf link
+  node      : bytes32        -- the executing node
+  requester : Key
+  action    : string         -- as passed to authorize_v3; non-empty
+  body      : bytes32        -- SHA-256 of the request body, as the called cell defines its bytes
+  at        : u64            -- unix seconds
+  nonce     : u64            -- chosen by the requester
+}
+
+Proof = enum {
+  0 Attested(Attestation)                -- for a Requires entry
+  1 CoSigned { by: Key, sig: Sig }       -- for a CoSign entry
+  2 Brokered { broker: Key, sig: Sig }   -- for a Via entry
+}
+
+attest_bytes(b) = len(16) || "ce-cap-v3-attest"  || AttestationBody(b)    -- the witness signs
+cosign_bytes(r) = len(16) || "ce-cap-v3-cosign"  || UseRequest(r)         -- the co-signer signs
+via_bytes(r)    = len(13) || "ce-cap-v3-via"     || UseRequest(r)         -- the broker signs
+request_id(r)   = SHA-256(len(17) || "ce-cap-v3-request" || UseRequest(r))
+
+proofs = seq<Proof>          -- at most MAX_PROOFS = 64; decoded strictly, like the token
+```
+
+The four domains differ from each other and from `ce-cap-v3`, so an attestation is never an approval, a co-signature
+is never a broker approval, and none of them is a link. Signatures follow section 2 (`Sig`, low-S; a WebAuthn
+signature has as its challenge the SHA-256 of the signed bytes). An attestation's `ReadThrough` names its message.
+
+**What the executing node checks** (`authorize_v3`, section 5.2), for the conditions of **every link of the chain**
+(by narrowing the leaf carries them all), given the `UseRequest` and the proofs of this use:
+
+- the `UseRequest` is this use: `leaf`, `node`, `requester`, `action` equal what is being authorized, `body` is the
+  hash of the request received, `at` is within 300 s of `now`, and `request_id` has not been executed here before;
+- `Requires` entry `R`: some `Attested(a)` has a valid signature by `a.body.witness`, that witness is `R.witness`
+  (`Key`: equal; `Cell(api)`: one of the node's keys for `api`), `a.body.subject == requester`,
+  `R.claim` is proved by `a.body.claim` (same variant and fields; a required `upto_msg: None` accepts any message),
+  `a.body.at <= now`, and `now - a.body.at <= fresh_within_s` when that is set -> else `"condition not met: requires"`;
+- `CoSign` entry `C`: some `CoSigned { by: C.by, sig }` verifies over `cosign_bytes` of this `UseRequest` -> else
+  `"condition not met: cosign"`. What the co-signer checks before it signs (an auth code, a human's yes) is its own
+  business; the verifier checks only that it signed this exact request;
+- `Via` entry `B`: some `Brokered { broker, sig }` verifies over `via_bytes` of this `UseRequest` with `broker`
+  matching `B` as a witness matches -> else `"condition not met: via"`. The resource executes nothing that does not
+  carry it, so the broker cannot be walked around even by a holder of a valid chain.
+
+`verify_chain_v3` (offline, no request) checks the conditions' canonical form and narrowing and reports them; it cannot
+say whether they will be met.
+
+**The three examples**, each as the `ext` of the link that sets the rule (a child link repeats it or is refused):
+
+| Rule | Caveat |
+|---|---|
+| "have you read the wechat chat before writing" | `Requires([{ witness: Cell("wechat.read"), claim: ReadThrough { source: "wechat", thread: "<thread id>", upto_msg: None }, fresh_within_s: Some(600) }])` on the link that grants `wechat.send:send`: the wechat cell attests the agent's key read the thread through its newest message at most 10 minutes ago |
+| "always verify the auth code and talk to this all through the same systems agent before you can pass through and do this" | `CoSign([{ by: <the system's guardian agent>, per: Use }])` together with `Via([Key(<the same agent>)])`: the agent checks the auth code, then signs the exact request both as approval and as broker; the same key in both makes it "the same systems agent" |
+| "always talk to this agent if you want to access the 3d printer" | `Via([Cell("printer3d.gate")])` (or `Key(<the 3D-printer agent>)`) on the link that grants `printer3d:*`: the printer accepts a job only with the printer agent's signed approval of that job |
 
 ## 5. Verification
 

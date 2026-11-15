@@ -118,7 +118,7 @@ fn every_enum_refuses_the_next_variant() {
     bad(&Sig::Ed25519([1; 64]), 3);
     bad(&AudienceSet::Any, 2);
     bad(&UsePer::Link, 2);
-    bad(&Caveat::Uses { max: 1, per: UsePer::Link }, 4);
+    bad(&Caveat::Uses { max: 1, per: UsePer::Link }, 7);
     bad(&ResourceV3::Any, 5);
     bad(&HostPat::Name("a.example".into()), 3);
     bad(&Proto::Tcp, 2);
@@ -199,11 +199,11 @@ fn unknown_variants_are_refused() {
     let mut x = b.clone();
     x[12] = 2;
     assert!(refuses(&x).contains("malformed"));
-    // Caveat::Uses -> unknown caveat variant 4.
+    // Caveat::Uses -> unknown caveat variant 7.
     let uses = bincode::serialize(&Caveat::Uses { max: 0xA5A5_A5A5, per: UsePer::Link }).unwrap();
     let at = find(&b, &uses);
     let mut x = b.clone();
-    x[at] = 4;
+    x[at] = 7;
     assert!(refuses(&x).contains("malformed"));
     // UsePer variant 2.
     let mut x = b.clone();
