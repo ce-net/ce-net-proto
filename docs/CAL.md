@@ -200,7 +200,8 @@ of the verifier, not things, and are written as they are.
 A `Resolver` answers each lookup with a list: empty is unknown, one is the pin, more than one is ambiguous. The offline
 one is the **ref book**; `ce-cal --ce-ref` puts the live ce.ref resolver over it for repository files (`ce cell call
 ref.index Repositories` / `Resolve`, the ce.ref cell; its verdicts `PASS`, `FAIL` and `CANNOT DETERMINE` are kept, so
-an index that cannot answer is a refusal, never an empty answer). Reverse lookups give `explain` and `decompile` the
+an index that cannot answer is a refusal, never an empty answer; so is a PASS that carries no content hash, which
+ce-index records for a file it could not read or hash, and a PASS about any ref other than the one asked). Reverse lookups give `explain` and `decompile` the
 readable names.
 
 ### 3.3 The ref book

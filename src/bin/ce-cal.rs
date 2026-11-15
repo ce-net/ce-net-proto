@@ -166,8 +166,18 @@ impl Resolver for Refs {
         match v.get("verdict").and_then(Value::as_str) {
             Some("PASS") => {
                 let f = &v["file"];
+                // The answer must be about the very ref asked for, and carry the hash of its bytes: ce-index
+                // records a file it could not read (or too large to hash) with an empty digest, and a ref
+                // with no hash cannot be pinned.
+                if f["reference"].as_str() != Some(portable) {
+                    return Err(format!("CANNOT DETERMINE: ce.ref answered for {} instead", f["reference"].as_str().unwrap_or("no reference")));
+                }
+                let digest = f["digest"].as_str().unwrap_or("");
+                if digest.len() != 64 || !ce_net_proto::cal::refs::is_lower_hex(digest) {
+                    return Err("CANNOT DETERMINE: ce.ref indexed the file but holds no content hash for it (unreadable or too large to hash)".into());
+                }
                 Ok(vec![FileInfo {
-                    sha256: f["digest"].as_str().unwrap_or("").to_string(),
+                    sha256: digest.to_string(),
                     size: f["size"].as_u64().unwrap_or(0),
                     commit: f["commit_id"].as_str().unwrap_or("").to_string(),
                 }])
