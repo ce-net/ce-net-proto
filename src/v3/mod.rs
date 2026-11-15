@@ -4,8 +4,9 @@
 //! form ([`TokenV3`]: magic `CEC3`, links, program bodies) and the canonical-form rules of section
 //! 3.4 ([`canon`]). Decoding is strict, unlike v1: trailing bytes, unknown variants, invalid bools
 //! and non-canonical values are refused. [`mint`] signs root and attenuated links ([`sign`], Ed25519
-//! and P-256) and refuses any child wider than its parent ([`narrow`]). Chain verification is not
-//! here yet.
+//! and P-256) and refuses any child wider than its parent ([`narrow`]). [`verify`] checks a chain
+//! (section 5.1) and authorizes one request at one node (section 5.2), WebAuthn included
+//! ([`webauthn`]).
 //!
 //! Nothing here touches v1: a byte string without the magic is not a v3 token ([`is_v3`]) and is
 //! verified by the v1 code alone.
@@ -15,11 +16,15 @@ pub mod mint;
 pub mod narrow;
 pub mod sign;
 pub mod types;
+pub mod verify;
+pub mod webauthn;
 
 #[cfg(test)]
 mod mint_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod verify_tests;
 
 use bincode::Options;
 use serde::Serialize;
