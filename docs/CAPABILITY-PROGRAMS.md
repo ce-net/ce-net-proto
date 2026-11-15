@@ -1,10 +1,11 @@
 # ce-net capability programs: recursive delegation, token format v3
 
-Status: **specification, not yet implemented** (2026-11-15, planner). Nothing in this document changes a byte
-of [TOKEN-FORMAT.md](TOKEN-FORMAT.md) (v1): every v1 token, revocation and golden vector in `tests/vectors.json` stays
-valid and is verified exactly as today. The design and the reasons are in `repo:ce-fleet/docs/AUTH-TREE.md`, section
-"Recursive capability programs". Conformance vectors (`tests/vectors-v3.json`) and the Python reference verifier are
-written with the implementation; until they exist this text is the only normative source and may still change.
+Status: **specification, implemented in this crate (`src/v3`), deployed nowhere yet** (2026-11-15, planner).
+Nothing in this document changes a byte of [TOKEN-FORMAT.md](TOKEN-FORMAT.md) (v1): every v1 token, revocation and
+golden vector in `tests/vectors.json` stays valid and is verified exactly as today. The design and the reasons are in
+`repo:ce-fleet/docs/AUTH-TREE.md`, section "Recursive capability programs". The conformance vectors are
+`tests/v3_vectors.json` (section 12.5). The Python reference verifier is not written; until a second implementation
+passes the vectors this text may still change.
 
 Leif, 2026-11-15: "one permission from me must be able to allow you to once install a permission elsewhere. permissions
 are recursive. this is a must. you must be able to chain permissions otherwise this system doesn't scale. i must be able
@@ -748,6 +749,239 @@ L1  issuer: Ed25519(planner)   audience: Ed25519(installer lane)
 Needed on leif-desk and the MacBook before this works: owner roots bootstrapped (section 9), a ce-gate and
 cell.install that verify v3 and accept an owner-rooted chain for the own-key-only `cell.install`, and a signed build
 statement for each build.
+
+### 12.4 Conditions: the three rules as chains
+
+Leif's three rules of section 4.1, each as a chain Leif -> planner (may grant, may not use) -> the agent that
+acts. The conditions sit on L0; L1 repeats them (it must, or it is refused) and may add its own.
+
+**"have you read the wechat chat before writing"**, on leif-desk:
+
+```
+L0  issuer: P256(leif-iphone)       audience: Ed25519(planner)
+    abilities: []                   resource: Node(leif-desk)       caveats: { not_after: T+7d }
+    ext: [ Requires([ { witness: Cell("wechat.read"),
+                        claim: ReadThrough { source: "wechat", thread: "family", upto_msg: None },
+                        fresh_within_s: Some(600) } ]) ]
+    delegate: { abilities: ["wechat.send:send"], audience: Any, depth: 1 }
+
+L1  issuer: Ed25519(planner)   audience: Ed25519(writer agent)
+    abilities: ["wechat.send:send"]     resource: Node(leif-desk)   caveats: { not_after: T+1d }
+    ext: [ the same Requires ]          delegate: None              parent: cap_id(L0)
+```
+
+The writer agent reads the thread through the wechat cell, which hands it `Attested { witness: <wechat.read's key>,
+subject: <writer agent>, claim: ReadThrough { "wechat", "family", Some("m42") }, at }` signed over `attest_bytes`.
+To send, it presents the token, `UseRequest { leaf: cap_id(L1), node: leif-desk, requester: <writer agent>, action:
+"wechat.send:send", body: SHA-256(the message), at, nonce }` and that proof. leif-desk resolves `wechat.read` to the
+key it trusts for that cell and refuses the send unless the attestation is by that key, about the requester, of that
+thread, not from the future and at most 600 s old. A new message in the thread does not by itself void an older
+attestation: `fresh_within_s` is what bounds how stale "read" may be.
+
+**"always verify the auth code and talk to this all through the same systems agent before you can pass through and do
+this"**, on box-1:
+
+```
+L0  ... resource: Node(box-1)
+    ext: [ CoSign([ { by: Ed25519(system guardian), per: Use } ]), Via([ Key(Ed25519(system guardian)) ]) ]
+    delegate: { abilities: ["door.gate:pass"], audience: Any, depth: 1 }
+L1  audience: Ed25519(agent B)   abilities: ["door.gate:pass"]   ext: [ the same CoSign, the same Via ]
+```
+
+Agent B sends its `UseRequest` and the auth code to the guardian. The guardian checks the code (the token format does
+not see it), then signs the request twice: `cosign_bytes` (its approval) and `via_bytes` (it is the path the call
+took). box-1 demands both signatures by that one key over this exact request: another body, another node, another
+time or another nonce is another request, and a request executed once is refused as a replay.
+
+**"always talk to this agent if you want to access the 3d printer"**, on printer-1:
+
+```
+L0  ... resource: Node(printer-1)
+    ext: [ Via([ Cell("printer3d.gate") ]) ]
+    delegate: { abilities: ["printer3d:print"], audience: Any, depth: 1 }
+L1  audience: Ed25519(agent B)   abilities: ["printer3d:print"]   ext: [ the same Via ]
+```
+
+printer-1 trusts the printer agent's key for `printer3d.gate` and accepts a job only with `Brokered { broker: <that
+key>, sig }` over `via_bytes` of the job's request. A holder of the whole valid chain that goes to the printer
+directly, approves itself, or reuses the agent's approval of another job is refused, and so is everyone at a node
+that does not know which key speaks for `printer3d.gate`.
+
+In all three, planner cannot mint L1 without the conditions (the minter refuses), and an L1 signed without them, or
+with a looser one, is refused by every verifier: `link 1: caveats are broader than the parent`.
+
+### 12.5 The vectors
+
+The chains of 12.1 to 12.4 are minted with fixed test keys in `tests/v3_vectors.json`, generated by `cargo test --test
+v3_vectors` (`tests/v3/cases.rs`, `tests/v3/negative.rs`, `tests/v3/conditions.rs`). The test fails when the file is
+stale, replays every vector from the file alone, and fails when this section no longer quotes the file's bytes. Each
+secret key is 32 copies of one seed byte; `leif-iphone` is P-256 (raw `P256` signatures, RFC 6979, low-S, an owner root
+with no `rp_id`), every other key Ed25519. `T` = 1800000000; every vector runs at `T+60` unless it says otherwise. Each
+node starts with an empty burn log and an empty replay log, and the uses of a vector run in order. A use with
+`presented` goes to `authorize_use_v3` with that request (`use_request_hex`), those proofs (`proofs_hex`, decoded
+strictly) and the hash of `body_hex`; the node's keys per cell api are the vector's `cell_keys`. Refusal texts are
+this implementation's; another verifier must refuse the same vectors, at the same link or use.
+
+| Key | Seed | Public key |
+|---|---|---|
+| leif-iphone | `11` | P256 `020217e617f0b6443928278f96999e69a23a4f2c152bdf6d6cdf66e5b80282d4ed` |
+| planner | `21` | Ed25519 `884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b` |
+| agent-b | `22` | Ed25519 `a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0` |
+| installer-lane | `23` | Ed25519 `74f85cda34d1c27c4621484731e91579c3d9c6cfc0d94b281aa11e9162058aa9` |
+| writer-agent | `24` | Ed25519 `58936604abda112bc94933569c82f8d0cc0ddf92a3f8329f2f448f7f484a594c` |
+| friend | `31` | Ed25519 `48075a597e721a156e2e0799de5cc0c5324dc6e7eaf1cdd46250868ec53215dd` |
+| friend-agent | `32` | Ed25519 `5e212c0980e4b39fc09721134aa02109374edfd260c0d3d03cb501c8d65457a9` |
+| process-k | `33` | Ed25519 `17cb79fb2b4120f2b1ec65e4198d6e08b28e813feb01e4a400839b85e18080ce` |
+| pi-01 | `41` | Ed25519 `db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d` |
+| box-1 | `42` | Ed25519 `2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12` |
+| leif-desk | `43` | Ed25519 `22fc297792f0b6ffc0bfcfdb7edb0c0aa14e025a365ec0e342e86e3829cb74b6` |
+| macbook | `44` | Ed25519 `d759793bbc13a2819a827c76adb6fba8a49aee007f49f2d0992d99b825ad2c48` |
+| printer-1 | `45` | Ed25519 `6355691c178a8ff91007a7478afb955ef7352c63e7b25703984cf78b26e21a56` |
+| system-guardian | `51` | Ed25519 `c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a` |
+| printer-agent | `52` | Ed25519 `2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7` |
+| wechat.read | `53` | Ed25519 `f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0` |
+
+| Chain (vector) | Program id (body bytes) | Link `cap_id`s, root first (`cap_bytes` length) | Token bytes |
+|---|---|---|---|
+| 12.1 Pi (`pi-install-once`) | `b94fb068a83def665282c3f370697ff165cef59fd1133b2a7b9cdcdaf8483b35` (110) | L0 `4ce03fc8c57a2d136147dd67007b4df65024fe63d2d90659fbc9547594169459` (290)<br>L1 `59f297cf33922e62a6310048dab6f1e6879f95eb3167bacd719cf69d7b30c2a2` (308) | 838 |
+| 12.2 [L0, L1] (`long-agent-runs-twice`) | `e7f9bbe9bd966fa2681b2a9cb604b1bd3d95259db4bfbdbe06042c93e8c08162` (336) | L0 `a969d39a7d7d875678c7b71d34aefe6981e48158d827ff75d3f0b376aa449798` (473)<br>L1 `2e1000a9a29c04e10fb644867dc8379d4ec831e6e38b71c6e5f1755a98dbdad7` (507) | 1446 |
+| 12.2 [L0, L1, L2] (`long-process-key`) | `e7f9bbe9bd966fa2681b2a9cb604b1bd3d95259db4bfbdbe06042c93e8c08162` (336) | L0 `a969d39a7d7d875678c7b71d34aefe6981e48158d827ff75d3f0b376aa449798` (473)<br>L1 `2e1000a9a29c04e10fb644867dc8379d4ec831e6e38b71c6e5f1755a98dbdad7` (507)<br>L2 `161e870950d05410f6170d04608f18cd85f9dbfbae51b3bcc1f8f6a0b9f9610e` (483) | 1984 |
+| 12.3 L0 + talk.messages@leif-desk leaf (`first-use-six-installs`) | `e043bca14000914a85528299d37de06032232c2e4fd15823c312fefdb478f439` (113) | L0 `8ca7ea3adc1ff2bd467ad07a8ad9f5f6109cd12b7a9678e446451b7008473271` (864)<br>L1 `b298cfdaf4c33ea3501309efb2020f5460bbe16488ec22f9c1bb70c773c5ef7b` (341) | 1448 |
+| 12.4 wechat (`wechat-read-then-write`) | none | L0 `e61857c4f223a8a620768dbba2425d86b456f9a4c69d47ff1598be9034606685` (288)<br>L1 `1d9ae6ff488a0a2420f97884864f7f6f1e2b4cb91906ecee619ae9a25c47db1b` (306) | 724 |
+| 12.4 guardian (`guardian-approves-and-brokers`) | none | L0 `fcf12b30ea57378371eba0bfb746f2216dea10cf2c044deabc74c1c3ae289bd6` (313)<br>L1 `2f274c64aab706996a373e51004849a9554dd634cbbe2828dfb7e270a1ce18c4` (331) | 774 |
+| 12.4 printer (`printer-through-its-agent`) | none | L0 `fe3e56bfd1a8aba40bcb617d9dc1e38ebc19c4191e9c28198a6b0d9787ebd283` (248)<br>L1 `918444a640cac376886fc8372154a8c0b3794e4c48fea3a4afdfe5690c62b1d4` (266) | 644 |
+| 12.4 printer, leaf adds CoSign (`printer-child-adds-guardian`) | none | L0 `b2f22c59d0abdae6baa1646917bec3655d04a8fd52162df0ec3782f0fce07e64` (248)<br>L1 `d3289d792bf6e0948af31eb5306a53c365c1b55c32d070338ffc5e71ae4b12cf` (318) | 696 |
+
+The whole 12.1 token (`pi-install-once`, hex, wrapped):
+
+```
+434543330200000000000000010000000301000000020217e617f0b6443928278f96999e69a23a4f2c152bdf6d6cdf66
+e5b80282d4ed00000000884b8857f4eaa1613c61504db34d4beaf346517a0e31de3cddd4d9b4201d9d0b000000000000
+000001000000db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d0000000000000000800c
+536b00000000000000000106000000000000002f6f70742f780200000000000000000000000100000000000000030000
+000100000000000000b94fb068a83def665282c3f370697ff165cef59fd1133b2a7b9cdcdaf8483b3501010000000000
+0000190000000000000063656c6c2e696e7374616c6c3a696e7374616c6c2d66696c6500000000010100000000000000
+000100000031951076b092a20b3396181b43092378759929aac7d69dd673b7cf53c8cc11043de50e8c09f98d8a257605
+0f20086c6ae0eb401fb3cd981d8d28bffa678754a3010000000300000000884b8857f4eaa1613c61504db34d4beaf346
+517a0e31de3cddd4d9b4201d9d0b00000000a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455
+a4f00100000000000000190000000000000063656c6c2e696e7374616c6c3a696e7374616c6c2d66696c6501000000db
+995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d000000000000000080234b6b0000000000
+0000000106000000000000002f6f70742f78020000000000000000000000010000000000000003000000010000000000
+0000b94fb068a83def665282c3f370697ff165cef59fd1133b2a7b9cdcdaf8483b35000200000000000000014ce03fc8
+c57a2d136147dd67007b4df65024fe63d2d90659fbc954759416945900000000139e7c81bb8402ec1e052e069fcfb357
+57920babfdaa974ddf933e9442bf31136ac0799494cee7f77b8f27273d2897e39b57d17b56697f5bd9f74906a553a103
+010000000000000001010000000000000000000000db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190
+f37fcc1f9d0d000000000000002f6f70742f782f72756e2e70793f9b0d4d3e88a9987a8670f2ab9ff7b912448d8ade2b
+d369395d06e48c6feb511a00000000000000ed010000
+```
+
+Its program body `P_pi` (`run.py` is the 26 bytes `print('hello from pi-01')\n`):
+
+```
+01010000000000000000000000db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d0d0000
+00000000002f6f70742f782f72756e2e70793f9b0d4d3e88a9987a8670f2ab9ff7b912448d8ade2bd369395d06e48c6f
+eb511a00000000000000ed010000
+```
+
+The allowed 12.4 wechat use (`wechat-read-then-write`). The message body is the 12 bytes `hello family`. Its
+`UseRequest` (leaf, node, requester, action `wechat.send:send`, body hash, `at` = T+60, `nonce` = 1), 172 bytes:
+
+```
+1d9ae6ff488a0a2420f97884864f7f6f1e2b4cb91906ecee619ae9a25c47db1b22fc297792f0b6ffc0bfcfdb7edb0c0a
+a14e025a365ec0e342e86e3829cb74b60000000058936604abda112bc94933569c82f8d0cc0ddf92a3f8329f2f448f7f
+484a594c10000000000000007765636861742e73656e643a73656e64d945993ad3e7eade26df2bceecafb525c4b3c9d8
+bd295743d8f74e6d412d42bb3cd2496b000000000100000000000000
+```
+
+`request_id` = `2a16e20357d3b16c62a4c7490360d93a7d5ff4a1ef4e4d1ca607c45e56817df2`. Its proofs, one `Attested` by the `wechat.read` key about the writer
+agent, `ReadThrough { "wechat", "family", Some("m42") }` at T-60 (120 s before the use), 204 bytes:
+
+```
+01000000000000000000000000000000f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0
+0000000058936604abda112bc94933569c82f8d0cc0ddf92a3f8329f2f448f7f484a594c000000000600000000000000
+776563686174060000000000000066616d696c790103000000000000006d3432c4d1496b000000000000000032b23ce6
+c33c14fa8e7137aee037c6d59bb68c37e34311f98ef887b7b89a0d9e2cfc0ffa66c18826c9537cfdbc9a2613dc089f0b
+886913d7c69b534db013a902
+```
+
+The first allowed 12.4 guardian use (`guardian-approves-and-brokers`): body `open door 2`, `nonce` = 1. The bytes the
+guardian signs as co-signer (`cosign_bytes`, 194 bytes; `via_bytes` differs only in the domain):
+
+```
+100000000000000063652d6361702d76332d636f7369676e2f274c64aab706996a373e51004849a9554dd634cbbe2828
+dfb7e270a1ce18c42152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db1200000000a09aa5f4
+7a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f00e00000000000000646f6f722e676174653a7061
+737300bc520008aff64876a8f5c14bf4b5a4cdc3e0253581ae7416d1bdee57a9a9233cd2496b00000000010000000000
+0000
+```
+
+Its proofs, `CoSigned` then `Brokered`, both by the guardian, 224 bytes:
+
+```
+02000000000000000100000000000000c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a
+0000000049d9f0e3a114f04a6afa47dc808938f27c1e916caeaa8e5784f8f94cd5d96ec1993527986b9fd5e2f714e13b
+9e6b9c79f1b435f10c385cde6e398ac4e4e94a070200000000000000c050c5637a44fa8629fff3cccce2300cb362a63d
+99d95fc54145266f4332445a00000000f65c7a700a13f0d9c5676c25826689ec241b2675cc48fdcfc0a8195600252d2a
+b91994211345dd077fdd0c18441370f1e79d278b91224051acf028018c0c6405
+```
+
+Request ids of the allowed uses that present proofs:
+
+| Vector | Use | `request_id` |
+|---|---|---|
+| `wechat-read-then-write` | 0 | `2a16e20357d3b16c62a4c7490360d93a7d5ff4a1ef4e4d1ca607c45e56817df2` |
+| `guardian-approves-and-brokers` | 0 | `4f323f81198c9587c9742a5dddf993301796a6a3c1d851418f0c2ece2d2b8fec` |
+| `guardian-approves-and-brokers` | 1 | `21e245a2c82c37ff75a9aba01e168a72d77506ba342570ba843164ea9e01c10f` |
+| `guardian-approval-replayed` | 0 | `d8c78a997d2a98cfeb5620217f70652f70a3aad4a354042e1f7f6afc71638fd9` |
+| `printer-through-its-agent` | 0 | `1c730bb3c361f4733e5bead4759f086768df447ef08f0dd16ce3fe842d4915f4` |
+| `printer-child-adds-guardian` | 1 | `5d969df97dfe62fefae5b1dc48558788e389a4edb332a5342cd9a357fa38f3de` |
+
+Outcomes of the chains of 12.1 to 12.3, each a vector:
+
+- `pi-install-once`: 12.1: agent B installs the one hashed script on pi-01 (L0 and L1 Uses 1 per Link burn). verify ok; uses: `ok`.
+- `long-agent-runs-twice`: 12.2 [L0, L1]: the friend's agent installs and runs job.py in run 1 and run 2; run 3 exceeds L1's Uses 2. verify ok; uses: `ok`, `ok`, `ok`, `capability used up`.
+- `long-process-key`: 12.2 [L0, L1, L2]: the chain verifies with holder K and the Egress, Limits and Programs K's sandbox enforces; K itself may not install or spawn. verify ok; uses: `program step 0: the capability does not grant 'cell.install:install-file'`, `capability is bound to a program`.
+- `first-use-six-installs`: 12.3: each of the six install rights once, each through its own leaf; a seventh leaf for talk.messages@leif-desk is refused by L0's counter. verify ok; uses: `ok`, `ok`, `ok`, `ok`, `ok`, `ok`, `capability used up`.
+- `pi-widened-ability`: 12.1 L1 adds proc.spawn:run, which L0 does not grant. verify refused: `link 1: abilities exceed the parent's grant`.
+- `pi-widened-resource`: 12.1 L1 names pi-01 and box-1 under L0's pi-01. verify refused: `link 1: resource is broader than the parent`.
+- `pi-wrong-audience`: 12.1 token presented by planner, not agent B (L1's audience). verify ok; uses: `leaf capability is not held by the request sender`.
+- `pi-root-holder-cannot-use`: 12.1 [L0] alone: planner may grant but not use (L0 has no abilities). verify ok; uses: `program step 0: the capability does not grant 'cell.install:install-file'`.
+- `pi-wrong-program`: 12.1 another program (another file hash) carried in the token, not the one Programs names. verify ok; uses: `program is not the one granted`.
+- `pi-wrong-file-hash`: 12.1 the granted program, but the request installs a file with another hash. verify ok; uses: `the request is not program step 0`.
+- `pi-replayed`: 12.1 a second install (run 2) finds both counters spent. verify ok; uses: `ok`, `capability used up`.
+- `pi-expired`: 12.1 one second after L1's not_after (T+1d). verify refused: `link 1: capability has expired`; uses: `link 1: capability has expired`.
+- `pi-unknown-caveat-variant`: 12.1 L0's first caveat tag set to 7, the first Caveat variant index not assigned (0 to 6 are). verify refused: `malformed v3 capability token: invalid value: integer `7`, expected variant index 0 <= i < 7`.
+- `pi-unknown-link-variant`: 12.1 the first Link tag set to 2 (neither V1 nor V3). verify refused: `malformed v3 capability token: invalid value: integer `2`, expected variant index 0 <= i < 2`.
+- `long-l0-widened-after-signing`: 12.2 L0 not_after moved to T+30d after Leif signed it. verify refused: `link 0: invalid signature`.
+- `long-l0-widened-by-friend`: 12.2 L0 widened to 30 days and signed by the friend, who is no root. verify refused: `capability chain does not root at an accepted authority`.
+- `long-l1-widened-uses`: 12.2 L1 Uses 6 under L0's 5. verify refused: `link 1: caveats are broader than the parent`.
+- `long-l1-widened-egress`: 12.2 L1 Egress *.org under L0's *.example.org. verify refused: `link 1: caveats are broader than the parent`.
+- `long-l1-widened-limit`: 12.2 L1 bytes_in 600 MB under L0's 500 MB. verify refused: `link 1: caveats are broader than the parent`.
+- `long-l1-depth-not-dropping`: 12.2 L1 keeps depth 2 under L0's depth 2. verify refused: `link 1: delegation depth exceeds the parent`.
+- `long-l2-widened-ability`: 12.2 the process link adds proc.spawn:run; L1 lets the agent grant only net.egress:connect. verify refused: `link 2: abilities exceed the parent's grant`.
+- `long-l2-widened-egress`: 12.2 the process link allows *.example.org under L1's api.example.org. verify refused: `link 2: caveats are broader than the parent`.
+- `long-l2-redelegates`: 12.2 the process link grants one more layer; L1's depth 1 allows none. verify refused: `link 2: delegation depth exceeds the parent`.
+- `first-use-replayed`: 12.3 the talk.messages@leif-desk leaf presented twice. verify ok; uses: `ok`, `capability used up`.
+- `first-use-wrong-node`: 12.3 the leif-desk leaf presented at the MacBook. verify ok; uses: `link 1: resource does not match this node`.
+- `first-use-ungranted-cell`: 12.3 a leaf for a cell Leif did not name (ce.secret). verify refused: `link 1: abilities exceed the parent's grant`.
+
+Outcomes of the condition chains of 12.4. In a vector with several uses, each refused use changes one thing in what
+an allowed use presents:
+
+- `wechat-read-then-write`: 12.4 the wechat cell attests the writer read thread 'family' through m42 two minutes ago; the send is allowed. verify ok; uses: `ok`.
+- `wechat-write-unread`: 12.4 the same send refused: no request or proofs; no attestation; one 601 s old (limit 600); one of thread 'work'; one about planner, not the writer; one the writer signed itself; one dated 1 s ahead. verify ok; uses: `condition not met: requires`, `condition not met: requires`, `condition not met: requires`, `condition not met: requires`, `condition not met: requires`, `condition not met: requires`, `condition not met: requires`.
+- `guardian-approves-and-brokers`: 12.4 the guardian (having checked the auth code) signs the exact request as co-signer and as broker; agent B passes, twice, each use with its own signatures. verify ok; uses: `ok`, `ok`.
+- `guardian-not-asked`: 12.4 refused: no request or proofs; co-signed but not brokered; brokered but not co-signed; the guardian's signatures are for 'open door 1' and the request is 'open door 2'; the request claims the approved body but the node received another; agent B signs for the guardian itself; the request is 301 s old. verify ok; uses: `condition not met: cosign`, `condition not met: via`, `condition not met: cosign`, `condition not met: cosign`, `use request is not this use (body)`, `condition not met: cosign`, `use request is outside the 300 s window`.
+- `guardian-approval-replayed`: 12.4 one approved request presented twice: the second is a replay. verify ok; uses: `ok`, `request replayed`.
+- `printer-through-its-agent`: 12.4 the printer node trusts printer-agent for printer3d.gate; with its signed approval of this job the print is accepted. verify ok; uses: `ok`.
+- `printer-around-its-agent`: 12.4 refused: straight to the printer with no request or proofs; no approval; agent B approves itself; the agent's approval is for another job; the approval is offered as a co-signature. verify ok; uses: `condition not met: via`, `condition not met: via`, `condition not met: via`, `condition not met: via`, `condition not met: via`.
+- `printer-node-knows-no-agent`: 12.4 a node that holds no key for printer3d.gate cannot tell who the broker is and refuses a correct approval. verify ok; uses: `condition not met: via`.
+- `printer-child-adds-guardian`: 12.4 planner's leaf adds CoSign(guardian) to Leif's Via: a child may add conditions; the print needs both and gets both; with the broker alone it is refused. verify ok; uses: `condition not met: cosign`, `ok`.
+- `wechat-child-drops-requires`: 12.4 planner's leaf leaves out the Requires Leif set. verify refused: `link 1: caveats are broader than the parent`.
+- `wechat-child-loosens-freshness`: 12.4 planner's leaf allows an attestation 3600 s old under Leif's 600 s. verify refused: `link 1: caveats are broader than the parent`.
+- `guardian-child-drops-via`: 12.4 planner's leaf keeps CoSign(guardian) and leaves out Via(guardian). verify refused: `link 1: caveats are broader than the parent`.
+- `guardian-child-drops-cosign`: 12.4 planner's leaf keeps Via(guardian) and leaves out CoSign(guardian). verify refused: `link 1: caveats are broader than the parent`.
+- `printer-child-swaps-broker`: 12.4 planner's leaf names agent B as the broker instead of the printer3d.gate cell. verify refused: `link 1: caveats are broader than the parent`.
 
 ## 13. Compatibility and versioning
 
