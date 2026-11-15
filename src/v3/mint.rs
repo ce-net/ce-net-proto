@@ -8,21 +8,29 @@
 //!   function the verifier runs): the signer is the parent's audience, the parent may delegate,
 //!   the audience and abilities are inside the parent's grant, a re-delegation right drops the
 //!   depth by at least one and grants no more abilities or audience, the resource is no broader,
-//!   and no caveat is looser (expiry, v1 ceilings, `Uses`, `Limits`, `Egress`, `Programs`);
+//!   and no caveat is looser (expiry, v1 ceilings, `Uses`, `Limits`, `Egress`, `Programs`), and
+//!   no condition of section 4.1 is dropped: every `Requires`, `CoSign` and `Via` entry of the
+//!   parent is in the child (a `Requires` entry no staler); the child may add entries;
 //! - the parent is itself a link a verifier could accept: canonical, and correctly signed where
 //!   that can be checked offline (a `WebAuthn` parent needs the node's `rp_id`, so only its form
 //!   is checked);
-//! - the link can be valid at some time (`not_before <= not_after`), every P-256 key it names is
-//!   a point on the curve, and it does not reuse the `(issuer, nonce)` of a link above it, which
-//!   would make one revocation name two links.
+//! - the link can be valid at some time (`not_before <= not_after`), every P-256 key it names
+//!   (audiences, and the witnesses, co-signers and brokers of its conditions, whose signature
+//!   every use needs) is a point on the curve, and it does not reuse the `(issuer, nonce)` of a
+//!   link above it, which would make one revocation name two links.
 //!
 //! After signing, the signature is verified against the statement's issuer. All of this is a
 //! courtesy to the holder; safety rests on the verifier alone.
+//!
+//! A child does not inherit a condition silently: the grant must spell out every entry of the
+//! parent, or the mint is refused. [`inherit_conditions`] writes them into a grant's `ext`.
 //!
 //! The nonce is the caller's: it must be random and unique per issuer (it names the link for
 //! revocation), and this crate has no RNG.
 
 use super::canon;
+use super::cond::Party;
+pub use super::mint_cond::inherit_conditions;
 use super::narrow::{Parent, check_child};
 use super::sign::{Signer, verify_sig};
 use super::types::AudienceSet;
@@ -89,7 +97,26 @@ fn check_statement(cap: &CapabilityV3) -> Result<()> {
     if !std::iter::once(&cap.audience).chain(granted).all(key_usable) {
         return Err(refuse("an audience key is not a P-256 point"));
     }
+    if !cap.ext.iter().flat_map(condition_keys).all(key_usable) {
+        return Err(refuse("a condition names a key that is not a P-256 point: no use could satisfy it"));
+    }
     Ok(())
+}
+
+/// The fixed keys whose signature a condition demands at every use.
+fn condition_keys(c: &Caveat) -> Vec<&Key> {
+    fn fixed(p: &Party) -> Option<&Key> {
+        match p {
+            Party::Key(k) => Some(k),
+            Party::Cell(_) => None,
+        }
+    }
+    match c {
+        Caveat::Requires(rs) => rs.iter().filter_map(|r| fixed(&r.witness)).collect(),
+        Caveat::CoSign(cs) => cs.iter().map(|c| &c.by).collect(),
+        Caveat::Via(bs) => bs.iter().filter_map(fixed).collect(),
+        _ => Vec::new(),
+    }
 }
 
 /// `(issuer, nonce)`: what a revocation names.

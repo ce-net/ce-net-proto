@@ -16,6 +16,7 @@
 pub mod canon;
 pub mod cond;
 pub mod mint;
+mod mint_cond;
 pub mod narrow;
 pub mod sign;
 pub mod types;
@@ -25,6 +26,8 @@ pub mod webauthn;
 
 #[cfg(test)]
 mod cond_tests;
+#[cfg(test)]
+mod mint_cond_tests;
 #[cfg(test)]
 mod mint_guard_tests;
 #[cfg(test)]

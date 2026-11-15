@@ -6,6 +6,7 @@
 //! Every predicate is conservative: a pair it cannot decide is "broader", so a false answer can
 //! only refuse a narrowing, never grant authority.
 
+use super::cond::Requirement;
 use super::{Caveat, CapabilityV3, Delegate, Key, Link, cap_id};
 use super::types::AudienceSet;
 use crate::cap::{Caveats, Resource, abilities_subset};
@@ -83,7 +84,24 @@ pub fn audience_subset(child: &AudienceSet, parent: &AudienceSet) -> bool {
     }
 }
 
-/// One caveat variant of the section 4 table: is `c` no looser than `p` (same variant)?
+/// Is the freshness bound `child` no looser than `parent`? `None` (any age) is looser than every
+/// `Some`.
+pub fn fresh_no_looser(child: Option<u64>, parent: Option<u64>) -> bool {
+    match (child, parent) {
+        (_, None) => true,
+        (Some(c), Some(p)) => c <= p,
+        (None, Some(_)) => false,
+    }
+}
+
+/// Does `child` still demand what `p` demands: the same witness and claim, no staler?
+fn requirement_kept(child: &[Requirement], p: &Requirement) -> bool {
+    child.iter().any(|c| c.witness == p.witness && c.claim == p.claim && fresh_no_looser(c.fresh_within_s, p.fresh_within_s))
+}
+
+/// One caveat variant of the section 4 table: is `c` no looser than `p` (same variant)? The three
+/// conditions are conjunctions, so there the child must keep every entry of the parent (a longer
+/// list is narrower); a claim or party is kept only if it is equal, never "implied".
 fn caveat_narrower(c: &Caveat, p: &Caveat) -> bool {
     match (c, p) {
         (Caveat::Uses { max: cm, per: cp }, Caveat::Uses { max: pm, per: pp }) => cm <= pm && cp == pp,
@@ -92,6 +110,9 @@ fn caveat_narrower(c: &Caveat, p: &Caveat) -> bool {
         }
         (Caveat::Egress(ce), Caveat::Egress(pe)) => egress_narrower(ce, pe),
         (Caveat::Programs(ci), Caveat::Programs(pi)) => ci.iter().all(|id| pi.contains(id)),
+        (Caveat::Requires(cr), Caveat::Requires(pr)) => pr.iter().all(|p| requirement_kept(cr, p)),
+        (Caveat::CoSign(cs), Caveat::CoSign(ps)) => ps.iter().all(|p| cs.contains(p)),
+        (Caveat::Via(cb), Caveat::Via(pb)) => pb.iter().all(|p| cb.contains(p)),
         _ => false,
     }
 }
