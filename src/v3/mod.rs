@@ -22,6 +22,8 @@ pub mod verify;
 pub mod webauthn;
 
 #[cfg(test)]
+mod mint_guard_tests;
+#[cfg(test)]
 mod mint_tests;
 #[cfg(test)]
 mod tests;
