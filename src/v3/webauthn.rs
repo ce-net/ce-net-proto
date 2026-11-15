@@ -38,6 +38,19 @@ pub fn verify(
     client_data: &[u8],
     sig: &[u8],
 ) -> Result<(), String> {
+    verify_challenge(&cap_id(cap), key, rp_id, auth_data, client_data, sig)
+}
+
+/// The assertion of `key` whose challenge is `challenge`: a link's `cap_id`, or for a proof of
+/// section 4.1 the SHA-256 of the bytes it signs (domain tag included).
+pub fn verify_challenge(
+    challenge: &[u8; 32],
+    key: &[u8; 33],
+    rp_id: Option<&str>,
+    auth_data: &[u8],
+    client_data: &[u8],
+    sig: &[u8],
+) -> Result<(), String> {
     let Some(rp_id) = rp_id else {
         return Err("no rp_id is recorded for this key".into());
     };
@@ -45,8 +58,8 @@ pub fn verify(
     if cd.get("type").and_then(|v| v.as_str()) != Some("webauthn.get") {
         return Err("clientDataJSON type is not webauthn.get".into());
     }
-    if cd.get("challenge").and_then(|v| v.as_str()) != Some(b64url(&cap_id(cap)).as_str()) {
-        return Err("challenge is not the link's cap_id".into());
+    if cd.get("challenge").and_then(|v| v.as_str()) != Some(b64url(challenge).as_str()) {
+        return Err("challenge is not the hash of the signed bytes".into());
     }
     if auth_data.len() < 37 || auth_data[..32] != Sha256::digest(rp_id.as_bytes())[..] {
         return Err("authenticatorData is not for the recorded rp_id".into());

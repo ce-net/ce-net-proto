@@ -43,11 +43,16 @@ impl Signer {
 
     /// Sign `cap_bytes(cap)`. The caller makes `cap.issuer == self.key()`.
     pub fn sign(&self, cap: &CapabilityV3) -> Sig {
-        let msg = cap_bytes(cap);
+        self.sign_bytes(&cap_bytes(cap))
+    }
+
+    /// Sign `msg` as it stands. The caller passes domain-tagged bytes (`cap_bytes`, or the
+    /// `attest_bytes`, `cosign_bytes`, `via_bytes` of section 4.1), never a bare payload.
+    pub fn sign_bytes(&self, msg: &[u8]) -> Sig {
         match self {
-            Signer::Ed25519(id) => Sig::Ed25519(id.sign(&msg)),
+            Signer::Ed25519(id) => Sig::Ed25519(id.sign(msg)),
             Signer::P256(k) => {
-                let s: P256Sig = k.sign(&msg);
+                let s: P256Sig = k.sign(msg);
                 let s = s.normalize_s().unwrap_or(s);
                 let mut out = [0u8; 64];
                 out.copy_from_slice(&s.to_bytes());
@@ -59,16 +64,21 @@ impl Signer {
 
 /// Does `sig` by `cap.issuer` verify over `cap_bytes(cap)`? `Ed25519` and raw `P256` only.
 pub fn verify_sig(cap: &CapabilityV3, sig: &Sig) -> Result<(), String> {
-    let msg = cap_bytes(cap);
-    match (&cap.issuer, sig) {
-        (Key::Ed25519(k), Sig::Ed25519(s)) => identity::verify(k, &msg, s).map_err(|_| "invalid signature".into()),
+    verify_bytes(&cap.issuer, &cap_bytes(cap), sig)
+}
+
+/// Does `sig` by `key` verify over `msg`? `Ed25519` and raw `P256` only; the variant must match
+/// the key (section 2).
+pub fn verify_bytes(key: &Key, msg: &[u8], sig: &Sig) -> Result<(), String> {
+    match (key, sig) {
+        (Key::Ed25519(k), Sig::Ed25519(s)) => identity::verify(k, msg, s).map_err(|_| "invalid signature".into()),
         (Key::P256(k), Sig::P256(rs)) => {
             if !sig.canonical() {
                 return Err("P-256 signature is not low-S".into());
             }
             let vk = P256Vk::from_sec1_bytes(k).map_err(|_| "malformed P-256 issuer key".to_string())?;
             let s = P256Sig::from_slice(rs).map_err(|_| "invalid signature".to_string())?;
-            vk.verify(&msg, &s).map_err(|_| "invalid signature".into())
+            vk.verify(msg, &s).map_err(|_| "invalid signature".into())
         }
         (Key::P256(_), Sig::WebAuthn { .. }) => Err("a WebAuthn signature needs the owner roots' rp_id".into()),
         _ => Err("signature type does not match the issuer key".into()),

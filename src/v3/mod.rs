@@ -6,13 +6,15 @@
 //! types, the bytes a witness, co-signer or broker signs, and the proofs of one use. Decoding is strict, unlike v1: trailing bytes, unknown variants, invalid bools
 //! and non-canonical values are refused. [`mint`] signs root and attenuated links ([`sign`], Ed25519
 //! and P-256) and refuses any child wider than its parent ([`narrow`]). [`verify`] checks a chain
-//! (section 5.1) and authorizes one request at one node (section 5.2), WebAuthn included
-//! ([`webauthn`]). [`uses`] is the node-local burn log of section 7 behind `authorize_v3`'s
+//! (section 5.1, WebAuthn included: [`webauthn`]); [`authorize`] authorizes one request at one node
+//! (section 5.2) and [`verify_cond`] holds that use to the chain's conditions and its proofs.
+//! [`uses`] is the node-local burn log of section 7 behind `authorize_v3`'s
 //! `burn` callback.
 //!
 //! Nothing here touches v1: a byte string without the magic is not a v3 token ([`is_v3`]) and is
 //! verified by the v1 code alone.
 
+pub mod authorize;
 pub mod canon;
 pub mod cond;
 pub mod mint;
@@ -22,8 +24,11 @@ pub mod sign;
 pub mod types;
 pub mod uses;
 pub mod verify;
+pub mod verify_cond;
 pub mod webauthn;
 
+#[cfg(test)]
+mod authorize_tests;
 #[cfg(test)]
 mod cond_tests;
 #[cfg(test)]
@@ -36,6 +41,10 @@ mod mint_tests;
 mod tests;
 #[cfg(test)]
 mod uses_tests;
+#[cfg(test)]
+mod verify_cond_tests;
+#[cfg(test)]
+mod verify_roots_tests;
 #[cfg(test)]
 mod verify_tests;
 

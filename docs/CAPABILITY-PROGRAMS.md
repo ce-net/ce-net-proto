@@ -368,7 +368,19 @@ As 5.1, plus:
 - some **leaf `abilities`** entry covers `action` (the leaf's `delegate.abilities` never authorize a call);
 - if the effective caveats carry `Programs`: the call is a program execution (section 6.4), else
   `"capability is bound to a program"`;
+- every condition of every link is met by the proofs of this use (section 4.1), else `"condition not met: requires"`,
+  `"condition not met: cosign"` or `"condition not met: via"`. A call that presents no `UseRequest` and proofs
+  (`authorize_v3`) meets no condition, so a chain carrying one is refused; `authorize_use_v3` takes them;
 - counters are charged (section 7), else `"capability used up"`.
+
+When a `UseRequest` is presented it is checked whether or not the chain carries a condition, in this order: more than
+`MAX_PROOFS` proofs or a malformed one (`"proof i: not canonical"`); a malformed request; `leaf`, `node`, `requester`,
+`action`, `body` against this use (`"use request is not this use (<field>)"`, `body` against the hash the node computed
+from the bytes it received); `at` (`"use request is outside the 300 s window"`); the conditions; and last the node's
+replay log records `request_id` and refuses one it holds (`"request replayed"`; an id may be forgotten once
+`now > at + 300`). `action` is the charged action of section 7: for a program step, that step's most specific ability.
+Each proof's signature is checked once; one that does not verify counts for nothing. Nothing is recorded (request id,
+counters) before every check has passed; a use the counters then refuse has spent its request id.
 
 The **effective caveats** handed to the cell are the leaf's (by narrowing they are the tightest in the chain), together
 with the list of every link id carrying `Uses` or a cumulative limit.
