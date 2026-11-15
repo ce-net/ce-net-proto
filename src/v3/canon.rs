@@ -4,9 +4,9 @@
 //! These are structural rules on one link at a time. Chain rules (continuity, narrowing, the
 //! v1-before-v3 order, signature type against issuer key) belong to the verifier.
 
-use super::{Caveat, CapabilityV3, Delegate, Link, MAX_ABILITIES, MAX_LINKS, MAX_PROGRAMS, TokenV3, UsePer};
+use super::{Caveat, CapabilityV3, Delegate, Link, MAX_ABILITIES, MAX_LINKS, MAX_PROGRAMS, TokenV3};
 use super::types::AudienceSet;
-use crate::program::{CUMULATIVE_LIMITS, egress_canonical, sorted_unique, sorted_unique_by_encoding};
+use crate::program::{egress_canonical, sorted_unique, sorted_unique_by_encoding};
 use crate::{Error, Result};
 
 /// Size bounds of the token and the canonical form of every V3 link.
@@ -59,7 +59,7 @@ pub fn check_cap(c: &CapabilityV3) -> Result<(), String> {
     for cv in &c.ext {
         check_caveat(cv)?;
     }
-    check_counted(c)
+    super::uses::check_counted(c)
 }
 
 fn check_delegate(d: &Delegate) -> Result<(), String> {
@@ -96,33 +96,4 @@ fn check_caveat(c: &Caveat) -> Result<(), String> {
             if !ids.is_empty() && sorted_unique(ids) { Ok(()) } else { Err("Programs must be sorted, unique, non-empty".into()) }
         }
     }
-}
-
-/// Section 7: a counted link (it carries `Uses` or a cumulative limit) expires and names a finite
-/// set of nodes; with `per: Action` its reachable abilities hold no wildcard.
-fn check_counted(c: &CapabilityV3) -> Result<(), String> {
-    let uses = c.ext.iter().find_map(|cv| match cv {
-        Caveat::Uses { per, .. } => Some(*per),
-        _ => None,
-    });
-    let cumulative = c.ext.iter().any(|cv| match cv {
-        Caveat::Limits(ls) => ls.iter().any(|l| CUMULATIVE_LIMITS.contains(&l.name.as_str())),
-        _ => false,
-    });
-    if uses.is_none() && !cumulative {
-        return Ok(());
-    }
-    if c.caveats.not_after == 0 {
-        return Err("a counted link must set caveats.not_after".into());
-    }
-    if !c.resource.is_finite() {
-        return Err("a counted link must name a finite resource (Node or Nodes)".into());
-    }
-    if uses == Some(UsePer::Action) {
-        let reach = c.abilities.iter().chain(c.delegate.iter().flat_map(|d| d.abilities.iter()));
-        if reach.into_iter().any(|a| a.contains('*')) {
-            return Err("Uses per Action needs abilities without wildcards".into());
-        }
-    }
-    Ok(())
 }

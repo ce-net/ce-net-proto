@@ -6,7 +6,8 @@
 //! and non-canonical values are refused. [`mint`] signs root and attenuated links ([`sign`], Ed25519
 //! and P-256) and refuses any child wider than its parent ([`narrow`]). [`verify`] checks a chain
 //! (section 5.1) and authorizes one request at one node (section 5.2), WebAuthn included
-//! ([`webauthn`]).
+//! ([`webauthn`]). [`uses`] is the node-local burn log of section 7 behind `authorize_v3`'s
+//! `burn` callback.
 //!
 //! Nothing here touches v1: a byte string without the magic is not a v3 token ([`is_v3`]) and is
 //! verified by the v1 code alone.
@@ -16,6 +17,7 @@ pub mod mint;
 pub mod narrow;
 pub mod sign;
 pub mod types;
+pub mod uses;
 pub mod verify;
 pub mod webauthn;
 
@@ -23,6 +25,8 @@ pub mod webauthn;
 mod mint_tests;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod uses_tests;
 #[cfg(test)]
 mod verify_tests;
 
