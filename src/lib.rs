@@ -11,12 +11,16 @@
 //! - [`cap`]: the [`Capability`] statement, signing, chain encoding, revocation, [`authorize`].
 //! - [`delegate`]: mint an attenuated child link from a held chain.
 //! - [`identity`]: [`NodeId`], [`Identity`], [`verify`](identity::verify).
+//! - [`program`]: capability programs (typed steps, ids, typing), CAPABILITY-PROGRAMS.md section 6.
+//! - [`v3`]: token format v3 types and strict canonical encoding (CAPABILITY-PROGRAMS.md).
 //! - [`verify_chain`]: node-independent offline check of a chain against one root key (what the
 //!   `ce-cap-verify` CLI runs).
 
 pub mod cap;
 pub mod delegate;
 pub mod identity;
+pub mod program;
+pub mod v3;
 
 pub use cap::*;
 pub use identity::{Identity, NodeId};
