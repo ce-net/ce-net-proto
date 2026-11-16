@@ -15,11 +15,15 @@
 //! - [`v3`]: token format v3 types and strict canonical encoding (CAPABILITY-PROGRAMS.md).
 //! - [`cal`]: CAL, the cell auth language: readable text that compiles to v3 links and programs,
 //!   decompiles back, explains them in plain English and checks a request (docs/CAL.md).
+//! - [`ces1`]: CES-1, the cell resource budget: manifest checks C1.1 and C1.2, sample verdicts C1.3 to C1.7.
+//! - [`ces8`]: CES-8, nested cells: a capability crossing into a box must narrow (`authorize_inner`).
 //! - [`verify_chain`]: node-independent offline check of a chain against one root key (what the
 //!   `ce-cap-verify` CLI runs).
 
 pub mod cal;
 pub mod cap;
+pub mod ces1;
+pub mod ces8;
 pub mod delegate;
 pub mod identity;
 pub mod program;

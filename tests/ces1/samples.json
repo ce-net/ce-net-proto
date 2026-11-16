@@ -1,0 +1,172 @@
+[
+ {
+  "name": "quiet-idle",
+  "budget": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nmem_bytes = \"64M\"\n",
+  "sample": {
+   "window_s": 60,
+   "busy": false,
+   "cpu_usec": 30000,
+   "wakeups": 45,
+   "calls": 100,
+   "conns_opened": 1,
+   "refusals": 3,
+   "refusal_retries": 0,
+   "rss_start": 10000000,
+   "rss_after_idle": 11000000
+  },
+  "expect": {
+   "C1.3": "pass",
+   "C1.4": "pass",
+   "C1.5": "pass",
+   "C1.6": "pass",
+   "C1.7": "pass"
+  }
+ },
+ {
+  "name": "wiki-mesh-2091-wakeups",
+  "budget": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nmem_bytes = \"64M\"\n",
+  "sample": {
+   "window_s": 60,
+   "busy": false,
+   "cpu_usec": 2400000,
+   "wakeups": 125460
+  },
+  "expect": {
+   "C1.3": "fail",
+   "C1.4": "fail",
+   "C1.5": "skip",
+   "C1.6": "skip",
+   "C1.7": "skip"
+  }
+ },
+ {
+  "name": "connection-per-call",
+  "budget": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nmem_bytes = \"64M\"\n",
+  "sample": {
+   "calls": 100,
+   "conns_opened": 100
+  },
+  "expect": {
+   "C1.3": "skip",
+   "C1.4": "skip",
+   "C1.5": "fail",
+   "C1.6": "skip",
+   "C1.7": "skip"
+  }
+ },
+ {
+  "name": "retries-a-refusal",
+  "budget": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nmem_bytes = \"64M\"\n",
+  "sample": {
+   "refusals": 2,
+   "refusal_retries": 6
+  },
+  "expect": {
+   "C1.3": "skip",
+   "C1.4": "skip",
+   "C1.5": "skip",
+   "C1.6": "fail",
+   "C1.7": "skip"
+  }
+ },
+ {
+  "name": "short-window-is-not-judged",
+  "budget": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nmem_bytes = \"64M\"\n",
+  "sample": {
+   "window_s": 20,
+   "busy": false,
+   "cpu_usec": 99999999,
+   "wakeups": 99999
+  },
+  "expect": {
+   "C1.3": "skip",
+   "C1.4": "skip",
+   "C1.5": "skip",
+   "C1.6": "skip",
+   "C1.7": "skip"
+  }
+ },
+ {
+  "name": "busy-window-is-not-idle",
+  "budget": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nmem_bytes = \"64M\"\n",
+  "sample": {
+   "window_s": 60,
+   "busy": true,
+   "cpu_usec": 99999999,
+   "wakeups": 99999
+  },
+  "expect": {
+   "C1.3": "skip",
+   "C1.4": "skip",
+   "C1.5": "skip",
+   "C1.6": "skip",
+   "C1.7": "skip"
+  }
+ },
+ {
+  "name": "exactly-at-budget",
+  "budget": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nmem_bytes = \"64M\"\n",
+  "sample": {
+   "window_s": 60,
+   "busy": false,
+   "cpu_usec": 60000,
+   "wakeups": 60,
+   "calls": 100,
+   "conns_opened": 2
+  },
+  "expect": {
+   "C1.3": "pass",
+   "C1.4": "pass",
+   "C1.5": "pass",
+   "C1.6": "skip",
+   "C1.7": "skip"
+  }
+ },
+ {
+  "name": "memory-grew-but-fits",
+  "budget": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nmem_bytes = \"64M\"\n",
+  "sample": {
+   "rss_start": 10000000,
+   "rss_after_idle": 30000000
+  },
+  "expect": {
+   "C1.3": "skip",
+   "C1.4": "skip",
+   "C1.5": "skip",
+   "C1.6": "skip",
+   "C1.7": "warn"
+  }
+ },
+ {
+  "name": "memory-over-mem-bytes",
+  "budget": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nmem_bytes = \"64M\"\n",
+  "sample": {
+   "rss_start": 60000000,
+   "rss_after_idle": 70000000
+  },
+  "expect": {
+   "C1.3": "skip",
+   "C1.4": "skip",
+   "C1.5": "skip",
+   "C1.6": "skip",
+   "C1.7": "fail"
+  }
+ },
+ {
+  "name": "raised-wakeup-budget",
+  "budget": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nidle_wakeups_s = 5  # five replicas heartbeat once a second\n",
+  "sample": {
+   "window_s": 120,
+   "busy": false,
+   "cpu_usec": 10000,
+   "wakeups": 480
+  },
+  "expect": {
+   "C1.3": "pass",
+   "C1.4": "pass",
+   "C1.5": "skip",
+   "C1.6": "skip",
+   "C1.7": "skip"
+  }
+ }
+]

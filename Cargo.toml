@@ -17,10 +17,16 @@ hex = "0.4"
 p256 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
 # v3 WebAuthn signatures (section 2): parse clientDataJSON.
 serde_json = "1"
+# CES-1 (docs/standards/CES-1-budget.md): the [budget] table of cell.toml.
+toml = "0.8"
 
 [[bin]]
 name = "ce-cap-verify"
 path = "src/bin/ce-cap-verify.rs"
+
+[[bin]]
+name = "ces-check"
+path = "src/bin/ces-check.rs"
 
 [[bin]]
 name = "ce-cal"

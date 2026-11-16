@@ -55,6 +55,29 @@ Examples (each with its checked-in `explain` output): [`examples/`](examples). S
 API: Rust (this crate, `cal` module; `cargo run --example explain`), TypeScript
 ([`sdk/ts`](sdk/ts), wasm-bindgen) and the C ABI for Python and any C FFI ([`sdk/python`](sdk/python)).
 
+## Standards (CES)
+
+Numbered standards for cells, with vectors and reference checkers: [`docs/standards/`](docs/standards/README.md).
+
+- [CES-1](docs/standards/CES-1-budget.md), the cell resource budget: the `[budget]` table of `cell.toml`, idle CPU
+  and wake-up limits, declared timers, one connection per peer. Checks C1.1 to C1.7 in `ce_net_proto::ces1`; the
+  `ces-check` CLI; vectors in
+  [`tests/ces1/`](tests/ces1).
+- [CES-8](docs/standards/CES-8-nesting.md), nested cells: a capability that crosses into a box (and a box inside
+  it, recursively) only ever narrows. `ce_net_proto::ces8::authorize_inner`; vectors in [`tests/ces8/`](tests/ces8).
+
+```
+cargo test --test ces1 --test ces8_vectors
+ces-check manifest path/to/cell.toml
+```
+
+The agent skill for building cells to these standards is [`skills/cell-build`](skills/cell-build/SKILL.md)
+(guide: [`docs/guide/BUILDING-CELLS.md`](docs/guide/BUILDING-CELLS.md)). Install it for Claude Code:
+
+```
+mkdir -p ~/.claude/skills && cp -r skills/cell-build ~/.claude/skills/
+```
+
 ## CLI
 
 ```

@@ -1,0 +1,110 @@
+[
+ {
+  "name": "no-budget-table",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n",
+  "expect": "absent"
+ },
+ {
+  "name": "empty-table-takes-defaults",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\n",
+  "expect": "valid"
+ },
+ {
+  "name": "full-table-at-defaults",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nidle_cpu_pct = 0.1\nidle_wakeups_s = 1\ncpu_max_pct = 100\nmem_bytes = \"128M\"\npids = 16\nconns = 64\nfanout = 16\nhops = 8\nlog_bytes = \"16M\"\n[[budget.timer]]\nname = \"replog-heartbeat\"\nidle_ms = 1000\nbusy_ms = 100\n",
+  "expect": "valid"
+ },
+ {
+  "name": "reason-given-but-timer-too-fast",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nidle_wakeups_s = 2  # raft leader lease renews twice a second\n[[budget.timer]]\nname = \"lease\"\nidle_ms = 500\n",
+  "expect": {
+   "fail": "C1.1",
+   "line": 11
+  }
+ },
+ {
+  "name": "above-default-with-reason-and-legal-timers",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nidle_wakeups_s = 2  # two replicas, one heartbeat each\n[[budget.timer]]\nname = \"hb-a\"\nidle_ms = 1000\n[[budget.timer]]\nname = \"hb-b\"\nidle_ms = 1000\n",
+  "expect": "valid"
+ },
+ {
+  "name": "above-default-without-reason",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nidle_cpu_pct = 0.3\n",
+  "expect": {
+   "fail": "C1.1",
+   "line": 8
+  }
+ },
+ {
+  "name": "above-hard-limit",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nidle_cpu_pct = 0.9  # busy\n",
+  "expect": {
+   "fail": "C1.1",
+   "line": 8
+  }
+ },
+ {
+  "name": "wakeups-above-hard-limit",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nidle_wakeups_s = 50  # polls\n",
+  "expect": {
+   "fail": "C1.1",
+   "line": 8
+  }
+ },
+ {
+  "name": "heartbeat-100ms-idle",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\n[[budget.timer]]\nname = \"replog-heartbeat\"\nidle_ms = 100\n",
+  "expect": {
+   "fail": "C1.1",
+   "line": 10
+  }
+ },
+ {
+  "name": "busy-under-50ms",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\n[[budget.timer]]\nname = \"hb\"\nidle_ms = 1000\nbusy_ms = 20\n",
+  "expect": {
+   "fail": "C1.1",
+   "line": 11
+  }
+ },
+ {
+  "name": "two-timers-exceed-wakeups",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\n[[budget.timer]]\nname = \"a\"\nidle_ms = 1000\n[[budget.timer]]\nname = \"b\"\nidle_ms = 1000\n",
+  "expect": {
+   "fail": "C1.2",
+   "line": 7
+  }
+ },
+ {
+  "name": "unknown-key",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nidle_cpu = 0.1\n",
+  "expect": {
+   "fail": "C1.1",
+   "line": 8
+  }
+ },
+ {
+  "name": "bad-size",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nmem_bytes = \"lots\"\n",
+  "expect": {
+   "fail": "C1.1",
+   "line": 8
+  }
+ },
+ {
+  "name": "hops-too-deep",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\nhops = 100\n",
+  "expect": {
+   "fail": "C1.1",
+   "line": 8
+  }
+ },
+ {
+  "name": "zero-pids",
+  "toml": "[cell]\napi = \"x.y\"\nkind = \"function\"\ncrate = \"x-y\"\nowner = \"leif\"\n\n[budget]\npids = 0\n",
+  "expect": {
+   "fail": "C1.1",
+   "line": 8
+  }
+ }
+]
