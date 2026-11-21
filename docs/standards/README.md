@@ -8,8 +8,8 @@ vectors any implementation can run. The process is CES-0.
 |---|---|---|---|---|
 | [CES-0](CES-0-process.md) | Process: numbering, versions, vectors, check ids | v0.1 | - | - |
 | [CES-1](CES-1-budget.md) | Cell resource budget | v0.1 draft | [`tests/ces1/`](../../tests/ces1) | Rust `ces1`, CLI `ces-check` |
-| CES-2 | Cell lifecycle (on-demand start, idle stop, leases on live systems) | planned | | |
-| CES-3 | Cell observability (`CellStat`, `NodeBudget`) | planned | | |
+| [CES-2](CES-2-lifecycle.md) | Cell lifecycle (on-demand start, idle stop, leases on live systems) | v0.1 draft | [`tests/ces2/`](../../tests/ces2) | Rust `ces2`, CLI `ces-check lifecycle`, `ces-check system` |
+| [CES-3](CES-3-observability.md) | Cell observability (measured from outside, `node.budget@1`, trace and hops) | v0.1 draft | [`tests/ces3/`](../../tests/ces3) | Rust `ces3` |
 | CES-4 | Cell container (isolation classes, metering, typed boundary) | planned | | |
 | CES-5 | Run records and metering receipts | planned | | |
 | CES-6 | Offers, pricing and settlement | planned | | |

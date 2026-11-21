@@ -1,0 +1,23 @@
+[
+  {"name": "first call starts", "lifecycle": {}, "from": "installed", "event": "call", "expect": "starting"},
+  {"name": "call after stop starts", "lifecycle": {}, "from": "stopped", "event": "call", "expect": "starting"},
+  {"name": "health makes live", "lifecycle": {}, "from": "starting", "event": "healthy", "expect": "live"},
+  {"name": "start timeout fails", "lifecycle": {}, "from": "starting", "event": "start_timeout", "expect": "failed"},
+  {"name": "calls done is idle", "lifecycle": {}, "from": "live", "event": "calls_done", "expect": "idle"},
+  {"name": "call wakes idle", "lifecycle": {}, "from": "idle", "event": "call", "expect": "live"},
+  {"name": "idle at the limit stops", "lifecycle": {}, "from": "idle", "event": {"idle_for": 300}, "expect": "stopped"},
+  {"name": "idle under the limit stays", "lifecycle": {}, "from": "idle", "event": {"idle_for": 299}, "expect": "idle"},
+  {"name": "short idle stop", "lifecycle": {"idle_stop_s": 60}, "from": "idle", "event": {"idle_for": 61}, "expect": "stopped"},
+  {"name": "kept never idle-stops", "lifecycle": {"keep": true, "keep_reason": "store"}, "from": "idle", "event": {"idle_for": 86400}, "expect": "idle"},
+  {"name": "two windows over: no freeze", "lifecycle": {}, "from": "idle", "event": {"over_budget": 2}, "expect": "idle"},
+  {"name": "three windows over: freeze", "lifecycle": {}, "from": "idle", "event": {"over_budget": 3}, "expect": "frozen"},
+  {"name": "thaw", "lifecycle": {}, "from": "frozen", "event": "thaw", "expect": "idle"},
+  {"name": "stop a frozen cell", "lifecycle": {}, "from": "frozen", "event": "stop", "expect": "stopped"},
+  {"name": "crash", "lifecycle": {}, "from": "live", "event": "crash", "expect": "failed"},
+  {"name": "failed restarts on call", "lifecycle": {}, "from": "failed", "event": "call", "expect": "starting"},
+  {"name": "lease ends a live cell", "lifecycle": {"keep": true, "keep_reason": "demo"}, "from": "live", "event": "lease_expired", "expect": "stopped"},
+  {"name": "health while stopped is refused", "lifecycle": {}, "from": "stopped", "event": "healthy", "expect": "refused"},
+  {"name": "thaw a live cell is refused", "lifecycle": {}, "from": "live", "event": "thaw", "expect": "refused"},
+  {"name": "call into frozen is refused", "lifecycle": {}, "from": "frozen", "event": "call", "expect": "refused"},
+  {"name": "idle_for while live is refused", "lifecycle": {}, "from": "live", "event": {"idle_for": 999}, "expect": "refused"}
+]

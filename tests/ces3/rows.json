@@ -1,0 +1,24 @@
+[
+  {"name": "idle rows ranked", "rows": [
+    {"cell": "quiet.cell", "window_s": 60, "cpu_usec": 30000, "wakeups": 30, "rss_bytes": 8388608, "pids": 2},
+    {"cell": "wiki.mesh", "window_s": 60, "cpu_usec": 23400000, "wakeups": 125460, "rss_bytes": 67108864, "pids": 7},
+    {"cell": "shop.orders", "window_s": 60, "cpu_usec": 990000, "wakeups": 11040, "rss_bytes": 33554432, "pids": 4}
+  ], "expect": [
+    {"cell": "wiki.mesh", "excess": 2091.0, "over": ["cpu", "wake"]},
+    {"cell": "shop.orders", "excess": 184.0, "over": ["cpu", "wake"]},
+    {"cell": "quiet.cell", "excess": 0.5, "over": []}
+  ]},
+  {"name": "busy row judged on mem and pids only", "rows": [
+    {"cell": "busy.cell", "window_s": 60, "busy": true, "cpu_usec": 60000000, "wakeups": 600000, "rss_bytes": 67108864, "pids": 4}
+  ], "expect": [{"cell": "busy.cell", "excess": 0.5, "over": []}]},
+  {"name": "short window judged on mem and pids only", "rows": [
+    {"cell": "short.cell", "window_s": 20, "cpu_usec": 20000000, "rss_bytes": 268435456, "pids": 40}
+  ], "expect": [{"cell": "short.cell", "excess": 2.5, "over": ["mem", "pids"]}]},
+  {"name": "ties sort by name", "rows": [
+    {"cell": "b.cell", "window_s": 60, "pids": 8},
+    {"cell": "a.cell", "window_s": 60, "pids": 8}
+  ], "expect": [{"cell": "a.cell", "excess": 0.5, "over": []}, {"cell": "b.cell", "excess": 0.5, "over": []}]},
+  {"name": "own budget raises the bar", "budget": {"big.cell": "[budget]\nidle_wakeups_s = 10 # raft heartbeat at 1 s on 10 peers\nmem_bytes = \"1G\" # holds its index in memory\n"}, "rows": [
+    {"cell": "big.cell", "window_s": 60, "wakeups": 300, "rss_bytes": 536870912, "pids": 4}
+  ], "expect": [{"cell": "big.cell", "excess": 0.5, "over": []}]}
+]

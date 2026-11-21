@@ -1,0 +1,12 @@
+[
+  {"name": "two default members fit", "system": "[system]\nname = \"p\"\nowner = \"person:t\"\ncells = [\"a.b\", \"c.d\"]\n[system.budget]\nprocs = 32\nidle_cpu_pct = 0.3\nmem_bytes = \"512M\"\n", "members": ["[cell]\napi = \"a.b\"\n", "[cell]\napi = \"c.d\"\n[budget]\n"], "started_s": 1000, "renewed_s": 1000, "now_s": 4599, "today": "2026-11-21", "expect": {"C2.4": "pass", "due": false}},
+  {"name": "lease ends at ttl", "system": "[system]\nname = \"p\"\nowner = \"person:t\"\n[system.budget]\nprocs = 32\n", "members": [], "started_s": 1000, "renewed_s": 1000, "now_s": 4600, "today": "2026-11-21", "expect": {"C2.4": "pass", "due": true}},
+  {"name": "renewal extends", "system": "[system]\nname = \"p\"\nowner = \"person:t\"\nttl_s = 600\n", "members": [], "started_s": 1000, "renewed_s": 3000, "now_s": 3500, "today": "2026-11-21", "expect": {"C2.4": "pass", "due": false}},
+  {"name": "keep_until in the future", "system": "[system]\nname = \"p\"\nowner = \"person:t\"\nkeep_until = \"2026-12-31\"\n", "members": [], "started_s": 0, "renewed_s": 0, "now_s": 99999999, "today": "2026-11-21", "expect": {"C2.4": "pass", "due": false}},
+  {"name": "keep_until passed", "system": "[system]\nname = \"p\"\nowner = \"person:t\"\nkeep_until = \"2026-11-20\"\n", "members": [], "started_s": 0, "renewed_s": 0, "now_s": 10, "today": "2026-11-21", "expect": {"C2.4": "pass", "due": true}},
+  {"name": "keep_until without owner", "system": "[system]\nname = \"p\"\nkeep_until = \"2026-12-31\"\n", "members": [], "expect": {"C2.4": "fail"}},
+  {"name": "three members over procs", "system": "[system]\nname = \"p\"\nowner = \"person:t\"\n[system.budget]\nprocs = 40\nidle_cpu_pct = 0.5\nmem_bytes = \"1G\"\n", "members": ["[budget]\n", "[budget]\n", "[budget]\n"], "expect": {"C2.4": "fail"}},
+  {"name": "members over memory", "system": "[system]\nname = \"p\"\nowner = \"person:t\"\n[system.budget]\nprocs = 64\nidle_cpu_pct = 0.5\nmem_bytes = \"200M\"\n", "members": ["[budget]\n", "[budget]\n"], "expect": {"C2.4": "fail"}},
+  {"name": "ttl above a day", "system": "[system]\nname = \"p\"\nowner = \"person:t\"\nttl_s = 100000\n", "members": [], "expect": {"C2.4": "fail"}},
+  {"name": "no name", "system": "[system]\nowner = \"person:t\"\n", "members": [], "expect": {"C2.4": "fail"}}
+]

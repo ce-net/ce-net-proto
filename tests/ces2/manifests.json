@@ -1,0 +1,15 @@
+[
+  {"name": "no table: defaults", "toml": "[cell]\napi = \"a.b\"\n", "expect": "valid"},
+  {"name": "empty table", "toml": "[cell]\napi = \"a.b\"\n[lifecycle]\n", "expect": "valid"},
+  {"name": "short idle stop", "toml": "[cell]\napi = \"a.b\"\n[lifecycle]\nidle_stop_s = 60\n", "expect": "valid"},
+  {"name": "idle stop below 30", "toml": "[cell]\napi = \"a.b\"\n[lifecycle]\nidle_stop_s = 5\n", "expect": {"fail": "C2.0", "line": 4}},
+  {"name": "idle stop above a day", "toml": "[cell]\napi = \"a.b\"\n[lifecycle]\nidle_stop_s = 90000\n", "expect": {"fail": "C2.0", "line": 4}},
+  {"name": "keep with reason", "toml": "[cell]\napi = \"state.store\"\n[lifecycle]\nkeep = true\nkeep_reason = \"other nodes' gates read this replica\"\n", "expect": "valid"},
+  {"name": "keep without reason", "toml": "[cell]\napi = \"a.b\"\n[lifecycle]\nkeep = true\n", "expect": {"fail": "C2.0", "line": 4}},
+  {"name": "keep with blank reason", "toml": "[cell]\napi = \"a.b\"\n[lifecycle]\nkeep = true\nkeep_reason = \"  \"\n", "expect": {"fail": "C2.0", "line": 4}},
+  {"name": "unknown key", "toml": "[cell]\napi = \"a.b\"\n[lifecycle]\nidle_stop = 300\n", "expect": {"fail": "C2.0", "line": 4}},
+  {"name": "start timeout too long", "toml": "[cell]\napi = \"a.b\"\n[lifecycle]\nstart_timeout_ms = 60000\n", "expect": {"fail": "C2.0", "line": 4}},
+  {"name": "drain too long", "toml": "[cell]\napi = \"a.b\"\n[lifecycle]\nidle_stop_s = 120\ndrain_ms = 20000\n", "expect": {"fail": "C2.0", "line": 5}},
+  {"name": "keep not a bool", "toml": "[cell]\napi = \"a.b\"\n[lifecycle]\nkeep = \"yes\"\n", "expect": {"fail": "C2.0", "line": 4}},
+  {"name": "not a table", "toml": "lifecycle = 3\n", "expect": {"fail": "C2.0", "line": 1}}
+]

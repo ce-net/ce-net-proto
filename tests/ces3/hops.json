@@ -1,0 +1,7 @@
+[
+  {"name": "default passes on", "trace": {"id": "t1", "hops_left": 8, "deadline_ms": 10000}, "now_ms": 5000, "expect": {"id": "t1", "hops_left": 7, "deadline_ms": 10000}},
+  {"name": "last hop passes on to zero", "trace": {"id": "t1", "hops_left": 1, "deadline_ms": 10000}, "now_ms": 5000, "expect": {"id": "t1", "hops_left": 0, "deadline_ms": 10000}},
+  {"name": "zero is refused", "trace": {"id": "t1", "hops_left": 0, "deadline_ms": 10000}, "now_ms": 5000, "expect": "hops"},
+  {"name": "past deadline is refused", "trace": {"id": "t1", "hops_left": 5, "deadline_ms": 10000}, "now_ms": 10000, "expect": "deadline"},
+  {"name": "zero and past: hops first", "trace": {"id": "t1", "hops_left": 0, "deadline_ms": 1}, "now_ms": 2, "expect": "hops"}
+]

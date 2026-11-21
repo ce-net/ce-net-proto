@@ -16,6 +16,8 @@
 //! - [`cal`]: CAL, the cell auth language: readable text that compiles to v3 links and programs,
 //!   decompiles back, explains them in plain English and checks a request (docs/CAL.md).
 //! - [`ces1`]: CES-1, the cell resource budget: manifest checks C1.1 and C1.2, sample verdicts C1.3 to C1.7.
+//! - [`ces2`]: CES-2, the cell lifecycle: `[lifecycle]` check C2.0, the state machine, systems and leases, run verdicts C2.1 to C2.5.
+//! - [`ces3`]: CES-3, observability: excess and ranking, the server-side row filter, the event gate, `hops_left` and the deadline.
 //! - [`ces8`]: CES-8, nested cells: a capability crossing into a box must narrow (`authorize_inner`).
 //! - [`verify_chain`]: node-independent offline check of a chain against one root key (what the
 //!   `ce-cap-verify` CLI runs).
@@ -23,6 +25,8 @@
 pub mod cal;
 pub mod cap;
 pub mod ces1;
+pub mod ces2;
+pub mod ces3;
 pub mod ces8;
 pub mod delegate;
 pub mod identity;

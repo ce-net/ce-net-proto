@@ -1,0 +1,11 @@
+[
+  {"name": "good run", "lifecycle": {}, "run": {"started_by_call": true, "health_ms": 400, "stopped_after_s": 330, "procs_after_stop": 0, "ran_before_first_call": false}, "expect": {"C2.1": "pass", "C2.2": "pass", "C2.3": "pass", "C2.5": "pass"}},
+  {"name": "slow start warns", "lifecycle": {"start_timeout_ms": 5000}, "run": {"started_by_call": true, "health_ms": 3000}, "expect": {"C2.1": "warn", "C2.2": "skip", "C2.3": "skip", "C2.5": "skip"}},
+  {"name": "start past timeout fails", "lifecycle": {}, "run": {"started_by_call": true, "health_ms": 2500}, "expect": {"C2.1": "fail", "C2.2": "skip", "C2.3": "skip", "C2.5": "skip"}},
+  {"name": "never idle-stopped", "lifecycle": {}, "run": {"observed_s": 27720}, "expect": {"C2.1": "skip", "C2.2": "fail", "C2.3": "skip", "C2.5": "skip"}},
+  {"name": "stopped late", "lifecycle": {"idle_stop_s": 60}, "run": {"stopped_after_s": 121}, "expect": {"C2.1": "skip", "C2.2": "fail", "C2.3": "skip", "C2.5": "skip"}},
+  {"name": "kept cell skips idle stop", "lifecycle": {"keep": true, "keep_reason": "store"}, "run": {"observed_s": 99999, "ran_before_first_call": true}, "expect": {"C2.1": "skip", "C2.2": "skip", "C2.3": "skip", "C2.5": "pass"}},
+  {"name": "child left after stop", "lifecycle": {}, "run": {"stopped_after_s": 300, "procs_after_stop": 2}, "expect": {"C2.1": "skip", "C2.2": "pass", "C2.3": "fail", "C2.5": "skip"}},
+  {"name": "started at boot without keep", "lifecycle": {}, "run": {"ran_before_first_call": true}, "expect": {"C2.1": "skip", "C2.2": "skip", "C2.3": "skip", "C2.5": "fail"}},
+  {"name": "first call did not start", "lifecycle": {}, "run": {"started_by_call": false}, "expect": {"C2.1": "fail", "C2.2": "skip", "C2.3": "skip", "C2.5": "skip"}}
+]

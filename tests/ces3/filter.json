@@ -1,0 +1,7 @@
+[
+  {"name": "node reader sees all", "caller": "person:ops", "rights": ["node.budget:read"], "rows": [{"cell": "a.b", "owner": "person:x"}, {"cell": "c.d", "owner": "person:y"}], "expect": ["a.b", "c.d"]},
+  {"name": "owner sees own", "caller": "person:x", "rights": [], "rows": [{"cell": "a.b", "owner": "person:x"}, {"cell": "c.d", "owner": "person:y"}], "expect": ["a.b"]},
+  {"name": "cell read right", "caller": "person:z", "rights": ["c.d:read"], "rows": [{"cell": "a.b", "owner": "person:x"}, {"cell": "c.d", "owner": "person:y"}], "expect": ["c.d"]},
+  {"name": "no right sees nothing", "caller": "person:z", "rights": ["c.d:call", "node.budget:write"], "rows": [{"cell": "a.b", "owner": "person:x"}, {"cell": "c.d", "owner": "person:y"}], "expect": []},
+  {"name": "prefix is not a right", "caller": "person:z", "rights": ["c:read"], "rows": [{"cell": "c.d", "owner": "person:y"}], "expect": []}
+]
