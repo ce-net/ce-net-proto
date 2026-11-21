@@ -1,0 +1,7 @@
+[
+  {"name": "in limits", "limits": {"max_bytes": 1024, "deadline_ms": 5000}, "answer": {"op": 2, "bytes": 100, "at_ms": 4000, "schema_ok": true}, "expect": "ok"},
+  {"name": "off schema", "limits": {"max_bytes": 1024, "deadline_ms": 5000}, "answer": {"op": 2, "bytes": 100, "at_ms": 4000, "schema_ok": false}, "expect": "off_contract"},
+  {"name": "too big", "limits": {"max_bytes": 1024, "deadline_ms": 5000}, "answer": {"op": 2, "bytes": 1025, "at_ms": 4000, "schema_ok": true}, "expect": "off_contract"},
+  {"name": "late", "limits": {"max_bytes": 1024, "deadline_ms": 5000}, "answer": {"op": 2, "bytes": 10, "at_ms": 5001, "schema_ok": true}, "expect": "expired"},
+  {"name": "at the deadline", "limits": {"max_bytes": 1024, "deadline_ms": 5000}, "answer": {"op": 2, "bytes": 1024, "at_ms": 5000, "schema_ok": true}, "expect": "ok"}
+]

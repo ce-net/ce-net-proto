@@ -1,0 +1,137 @@
+{
+ "how": "keys: provider seed = 32 bytes of 0x01, caller seed = 32 bytes of 0x02. Record i is `golden.record` with start_ms and end_ms plus i*1000, caller and provider set to the seeds' public keys, parent the hash of record i-1 (64 zeros for 0); then signed by both, then `tamper` applied (ops that edit a record are re-signed only where the op says so). `golden` is a fixed record (caller and provider empty) whose canonical text and SHA-256 were computed by Python json.dumps(sort_keys=True, separators=(',',':')) and hashlib, a second implementation.",
+ "golden": {
+  "record": {
+   "v": 1,
+   "image_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "contract_hash": "bbbbbbbbbbbbbbbb",
+   "request_hash": "c3f7bdf537c46724392c4428e47e04c148c56966190c3c9ed92114800c9f35bb",
+   "answer_hash": "a2e0a4cc1f221c7f2a1754d8bdf959135ba486a3934d54a069c166a2ce35dac9",
+   "class": "W",
+   "meter": {
+    "cpu_usec": 120000,
+    "mem_peak": 8388608,
+    "mem_byte_seconds": 1048576,
+    "io_bytes": 0,
+    "egress_bytes": 0,
+    "wall_ms": 150,
+    "calls": 1
+   },
+   "start_ms": 1763700000000,
+   "end_ms": 1763700000150,
+   "caller": "",
+   "provider": "",
+   "cap_chain_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "parent": "0000000000000000000000000000000000000000000000000000000000000000",
+   "evidence": "none"
+  },
+  "canonical": "{\"answer_hash\":\"a2e0a4cc1f221c7f2a1754d8bdf959135ba486a3934d54a069c166a2ce35dac9\",\"caller\":\"\",\"cap_chain_hash\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"class\":\"W\",\"contract_hash\":\"bbbbbbbbbbbbbbbb\",\"end_ms\":1763700000150,\"evidence\":\"none\",\"image_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"meter\":{\"calls\":1,\"cpu_usec\":120000,\"egress_bytes\":0,\"io_bytes\":0,\"mem_byte_seconds\":1048576,\"mem_peak\":8388608,\"wall_ms\":150},\"parent\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"provider\":\"\",\"request_hash\":\"c3f7bdf537c46724392c4428e47e04c148c56966190c3c9ed92114800c9f35bb\",\"start_ms\":1763700000000,\"v\":1}",
+  "hash": "d2d52b20adf8591951740ede6a5860ca8a8e5741cb47bc9387eb18a3f497d52a"
+ },
+ "cases": [
+  {
+   "name": "three good records, countersigned",
+   "n": 3,
+   "tamper": [],
+   "need_caller": true,
+   "expect": []
+  },
+  {
+   "name": "provider-only inside the window is a C5.2 when countersign is required",
+   "n": 2,
+   "tamper": [
+    {
+     "index": 1,
+     "op": "drop_caller_sig"
+    }
+   ],
+   "need_caller": true,
+   "expect": [
+    {
+     "check": "C5.2",
+     "index": 1
+    }
+   ]
+  },
+  {
+   "name": "provider-only is fine when not required",
+   "n": 2,
+   "tamper": [
+    {
+     "index": 1,
+     "op": "drop_caller_sig"
+    }
+   ],
+   "need_caller": false,
+   "expect": []
+  },
+  {
+   "name": "signed by the wrong key",
+   "n": 2,
+   "tamper": [
+    {
+     "index": 0,
+     "op": "provider_signs_with_caller_key"
+    }
+   ],
+   "need_caller": true,
+   "expect": [
+    {
+     "check": "C5.2",
+     "index": 0
+    }
+   ]
+  },
+  {
+   "name": "meter edited after signing",
+   "n": 2,
+   "tamper": [
+    {
+     "index": 1,
+     "op": "edit_meter_after_sign"
+    }
+   ],
+   "need_caller": true,
+   "expect": [
+    {
+     "check": "C5.2",
+     "index": 1
+    }
+   ]
+  },
+  {
+   "name": "broken chain",
+   "n": 3,
+   "tamper": [
+    {
+     "index": 2,
+     "op": "parent_zero"
+    }
+   ],
+   "need_caller": true,
+   "expect": [
+    {
+     "check": "C5.1",
+     "index": 2
+    }
+   ]
+  },
+  {
+   "name": "wall longer than the run",
+   "n": 1,
+   "tamper": [
+    {
+     "index": 0,
+     "op": "wall_ms_100000"
+    }
+   ],
+   "need_caller": true,
+   "expect": [
+    {
+     "check": "C5.3",
+     "index": 0
+    }
+   ]
+  }
+ ]
+}

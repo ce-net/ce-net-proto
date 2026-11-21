@@ -1,0 +1,10 @@
+[
+  {"name": "accepted only, in the period, this pair", "caller": "A", "provider": "B", "from_ms": 0, "to_ms": 1000, "entries": [
+    {"caller": "A", "provider": "B", "at_ms": 10, "units": 5, "accepted": true},
+    {"caller": "A", "provider": "B", "at_ms": 20, "units": 7, "accepted": true, "disputed": true},
+    {"caller": "A", "provider": "B", "at_ms": 30, "units": 11, "accepted": false},
+    {"caller": "A", "provider": "C", "at_ms": 40, "units": 13, "accepted": true},
+    {"caller": "A", "provider": "B", "at_ms": 1000, "units": 17, "accepted": true},
+    {"caller": "A", "provider": "B", "at_ms": 999, "units": 19, "accepted": true}
+  ], "expect": 24}
+]

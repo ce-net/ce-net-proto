@@ -1,0 +1,16 @@
+[
+  {"name": "stranger wasm on ops-1 runs at W", "launch": {"kind": "wasm"}, "node": ["W", "I1"], "policy": {"strangers": true}, "expect": "W"},
+  {"name": "stranger native without gVisor is refused, never I1", "launch": {"kind": "native"}, "node": ["W", "I1"], "policy": {"strangers": true}, "expect": {"error": "no_isolation_class"}},
+  {"name": "stranger native with gVisor runs at I2", "launch": {"kind": "native"}, "node": ["W", "I1", "I2"], "policy": {"strangers": true}, "expect": "I2"},
+  {"name": "stranger native with KVM only runs at I3", "launch": {"kind": "native"}, "node": ["W", "I1", "I3"], "policy": {"strangers": true}, "expect": "I3"},
+  {"name": "granted author native runs at I1", "launch": {"kind": "native", "granted_author": true}, "node": ["W", "I1"], "policy": {}, "expect": "I1"},
+  {"name": "granted author may ask stronger", "launch": {"kind": "native", "granted_author": true, "wanted": "I2"}, "node": ["W", "I1", "I2"], "policy": {}, "expect": "I2"},
+  {"name": "asking stronger than the node has fails closed", "launch": {"kind": "native", "granted_author": true, "wanted": "I3"}, "node": ["W", "I1", "I2"], "policy": {}, "expect": {"error": "no_isolation_class"}},
+  {"name": "asking W for a native image allows nothing", "launch": {"kind": "native", "granted_author": true, "wanted": "W"}, "node": ["W", "I1"], "policy": {}, "expect": {"error": "policy_refused"}},
+  {"name": "a Mac: strangers off", "launch": {"kind": "wasm"}, "node": ["W", "I1", "I3"], "policy": {"strangers": false}, "expect": {"error": "policy_refused"}},
+  {"name": "policy without I2 refuses a stranger's native image", "launch": {"kind": "native"}, "node": ["W", "I1", "I2"], "policy": {"strangers": true, "classes": ["W", "I1"]}, "expect": {"error": "policy_refused"}},
+  {"name": "no spend", "launch": {"kind": "wasm", "has_spend": false}, "node": ["W"], "policy": {"strangers": true}, "expect": {"error": "no_spend"}},
+  {"name": "three strikes", "launch": {"kind": "wasm", "strikes": 3}, "node": ["W"], "policy": {"strangers": true}, "expect": {"error": "image_refused"}},
+  {"name": "no spend comes before strikes", "launch": {"kind": "wasm", "has_spend": false, "strikes": 9}, "node": ["W"], "policy": {"strangers": true}, "expect": {"error": "no_spend"}},
+  {"name": "node with no wasm", "launch": {"kind": "wasm"}, "node": ["I1"], "policy": {"strangers": true}, "expect": {"error": "no_isolation_class"}}
+]

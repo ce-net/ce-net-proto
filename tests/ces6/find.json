@@ -1,0 +1,23 @@
+[
+  {"name": "cheapest first, trust breaks ties", "now_ms": 1000, "need": {"class_at_least": "I2", "mem_bytes": 1073741824}, "offers": [
+    {"id": "a", "provider": "p1", "class": "I2", "mem_bytes": 2147483648, "price": {"per_cpu_s": 3.0}, "valid_until_ms": 5000, "signed": true, "trust": 0.5},
+    {"id": "b", "provider": "p2", "class": "I3", "mem_bytes": 2147483648, "price": {"per_cpu_s": 2.0}, "valid_until_ms": 5000, "signed": true, "trust": 0.1},
+    {"id": "c", "provider": "p3", "class": "I2", "mem_bytes": 2147483648, "price": {"per_cpu_s": 2.0}, "valid_until_ms": 5000, "signed": true, "trust": 0.9}
+  ], "expect": ["c", "b", "a"]},
+  {"name": "expired, unsigned, weak and small are not found", "now_ms": 1000, "need": {"class_at_least": "I2", "mem_bytes": 1073741824}, "offers": [
+    {"id": "old", "provider": "p1", "class": "I2", "mem_bytes": 2147483648, "price": {"per_cpu_s": 1.0}, "valid_until_ms": 1000, "signed": true},
+    {"id": "nosig", "provider": "p1", "class": "I2", "mem_bytes": 2147483648, "price": {"per_cpu_s": 1.0}, "valid_until_ms": 9000, "signed": false},
+    {"id": "weak", "provider": "p1", "class": "I1", "mem_bytes": 2147483648, "price": {"per_cpu_s": 1.0}, "valid_until_ms": 9000, "signed": true},
+    {"id": "small", "provider": "p1", "class": "I3", "mem_bytes": 1048576, "price": {"per_cpu_s": 1.0}, "valid_until_ms": 9000, "signed": true},
+    {"id": "ok", "provider": "p1", "class": "I3", "mem_bytes": 1073741824, "price": {"per_cpu_s": 9.0}, "valid_until_ms": 9000, "signed": true}
+  ], "expect": ["ok"]},
+  {"name": "a wasm need is met only by W", "now_ms": 0, "need": {"class_at_least": "W", "mem_bytes": 0}, "offers": [
+    {"id": "w", "provider": "p1", "class": "W", "mem_bytes": 67108864, "price": {"per_cpu_s": 5.0}, "valid_until_ms": 9, "signed": true},
+    {"id": "vm", "provider": "p2", "class": "I3", "mem_bytes": 67108864, "price": {"per_cpu_s": 1.0}, "valid_until_ms": 9, "signed": true}
+  ], "expect": ["w"]},
+  {"name": "price cap and region", "now_ms": 0, "need": {"class_at_least": "I2", "mem_bytes": 0, "region": "se", "max_price_per_cpu_s": 2.0}, "offers": [
+    {"id": "se-cheap", "provider": "p1", "class": "I2", "mem_bytes": 1, "price": {"per_cpu_s": 2.0}, "region": "se", "valid_until_ms": 9, "signed": true},
+    {"id": "se-dear", "provider": "p2", "class": "I2", "mem_bytes": 1, "price": {"per_cpu_s": 2.5}, "region": "se", "valid_until_ms": 9, "signed": true},
+    {"id": "cn", "provider": "p3", "class": "I2", "mem_bytes": 1, "price": {"per_cpu_s": 0.5}, "region": "cn", "valid_until_ms": 9, "signed": true}
+  ], "expect": ["se-cheap"]}
+]

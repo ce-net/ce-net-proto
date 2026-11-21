@@ -1,0 +1,9 @@
+[
+  {"name": "within the root", "root": 1000, "steps": [{"charge": 400}, {"charge": 600}], "expect": [[600], [0]]},
+  {"name": "one past the root", "root": 1000, "steps": [{"charge": 999}, {"charge": 2}], "expect": [[1], "no_spend"]},
+  {"name": "child may not widen", "root": 1000, "steps": [{"charge": 700}, {"delegate": 301}], "expect": [[300], "widen"]},
+  {"name": "child charges every link", "root": 1000, "steps": [{"delegate": 500}, {"charge": 200}, {"delegate": 100}, {"charge": 100}], "expect": [[1000, 500], [800, 300], [800, 300, 100], [700, 200, 0]]},
+  {"name": "refused charge charges nothing", "root": 1000, "steps": [{"delegate": 500}, {"charge": 450}, {"charge": 60}], "expect": [[1000, 500], [550, 50], "no_spend"]},
+  {"name": "sub-contract ends, the rest is the root's", "root": 1000, "steps": [{"delegate": 300}, {"charge": 300}, {"pop": true}, {"charge": 700}, {"charge": 1}], "expect": [[1000, 300], [700, 0], [700], [0], "no_spend"]},
+  {"name": "nested three deep cannot pass the caller's grant", "root": 100, "steps": [{"delegate": 100}, {"delegate": 100}, {"charge": 60}, {"charge": 60}], "expect": [[100, 100], [100, 100, 100], [40, 40, 40], "no_spend"]}
+]

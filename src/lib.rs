@@ -18,6 +18,10 @@
 //! - [`ces1`]: CES-1, the cell resource budget: manifest checks C1.1 and C1.2, sample verdicts C1.3 to C1.7.
 //! - [`ces2`]: CES-2, the cell lifecycle: `[lifecycle]` check C2.0, the state machine, systems and leases, run verdicts C2.1 to C2.5.
 //! - [`ces3`]: CES-3, observability: excess and ranking, the server-side row filter, the event gate, `hops_left` and the deadline.
+//! - [`ces4`]: CES-4, the cell container: the isolation class a launch runs at (fails closed), the typed boundary.
+//! - [`ces5`]: CES-5, run records: canonical hash, Ed25519 signatures, chain checks C5.1 to C5.3.
+//! - [`ces6`]: CES-6, the market in internal units: spend chains charged on every link, Find, Net.
+//! - [`ces7`]: CES-7, wrapped software: a detect record to planned ops, rights and `[budget]`.
 //! - [`ces8`]: CES-8, nested cells: a capability crossing into a box must narrow (`authorize_inner`).
 //! - [`verify_chain`]: node-independent offline check of a chain against one root key (what the
 //!   `ce-cap-verify` CLI runs).
@@ -27,6 +31,10 @@ pub mod cap;
 pub mod ces1;
 pub mod ces2;
 pub mod ces3;
+pub mod ces4;
+pub mod ces5;
+pub mod ces6;
+pub mod ces7;
 pub mod ces8;
 pub mod delegate;
 pub mod identity;

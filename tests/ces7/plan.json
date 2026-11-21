@@ -1,0 +1,12 @@
+[
+  {"name": "an HTTP program without OpenAPI", "detect": {"api": "notes.http", "surfaces": [
+    {"method": "GET", "path": "/notes"}, {"method": "GET", "path": "/notes/{id}"}, {"method": "POST", "path": "/notes"}, {"method": "DELETE", "path": "/notes/{id}"}, {"method": "get", "path": "/notes"}
+  ], "measured": {"idle_cpu_pct": 0.02, "idle_wakeups_s": 0.3, "rss_bytes": 20971520}, "egress": []},
+  "expect": {"ops": [["GetNotes", "notes.http:read"], ["GetNotesId", "notes.http:read"], ["PostNotes", "notes.http:write"], ["DeleteNotesId", "notes.http:write"], ["GetNotes_2", "notes.http:read"]], "budget": "[budget]\n", "egress_to_grant": []}},
+  {"name": "a command line program", "detect": {"api": "tool.git", "surfaces": [
+    {"command": "status"}, {"command": "log"}, {"command": "remote add"}, {"command": "remote ls"}, {"command": "commit"}
+  ], "measured": {"idle_cpu_pct": 0.15, "idle_wakeups_s": 3.0, "rss_bytes": 314572800}, "egress": ["github.com:443"]},
+  "expect": {"ops": [["Status", "tool.git:read"], ["Log", "tool.git:write"], ["RemoteAdd", "tool.git:write"], ["RemoteLs", "tool.git:read"], ["Commit", "tool.git:write"]],
+             "budget": "[budget]\nidle_cpu_pct = 0.2 # measured by ce-wrap detect\nidle_wakeups_s = 5 # measured by ce-wrap detect\nmem_bytes = \"512M\" # measured by ce-wrap detect\n", "egress_to_grant": ["github.com:443"]}},
+  {"name": "above the hard limits is not wrapped", "detect": {"api": "busy.loop", "surfaces": [{"command": "run"}], "measured": {"idle_cpu_pct": 12.0, "idle_wakeups_s": 400.0, "rss_bytes": 1}}, "expect": "refused"}
+]
