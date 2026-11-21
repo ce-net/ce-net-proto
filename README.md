@@ -75,8 +75,12 @@ The agent skill for building cells to these standards is [`skills/cell-build`](s
 (guide: [`docs/guide/BUILDING-CELLS.md`](docs/guide/BUILDING-CELLS.md)). Install it for Claude Code:
 
 ```
-mkdir -p ~/.claude/skills && cp -r skills/cell-build ~/.claude/skills/
+git clone https://github.com/ce-net/ce-net-proto ~/dev/ce-net-proto
+mkdir -p ~/.claude/skills && ln -sfn ~/dev/ce-net-proto/skills/cell-build ~/.claude/skills/cell-build
 ```
+
+A link, not a copy: the skill points into `docs/` of this repo, and `git pull` updates it. The idle audit it asks
+for is `cell-audit idle` (repo `rust-stack`, crate `cell-audit`); `ces-check` comes with `cargo install --path .`.
 
 ## CLI
 
